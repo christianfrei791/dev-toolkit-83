@@ -1,25 +1,30 @@
-class ClickerError(Exception):
-    """Base class for exceptions in the autoclicker."""
+import time
+import random
+
+class NetworkError(Exception):
     pass
 
-class InvalidConfigurationError(ClickerError):
-    """Raised when the configuration is invalid."""
-    def __init__(self, message):
-        super().__init__(message)
+class Retry:
+    def __init__(self, retries=3, delay=1, backoff=2):
+        self.retries = retries
+        self.delay = delay
+        self.backoff = backoff
 
-class ClickRateExceededError(ClickerError):
-    """Raised when the click rate exceeds allowed limits."""
-    def __init__(self, limit):
-        self.limit = limit
-        super().__init__(f'Click rate exceeded the limit of {limit} clicks per second.')
+    def __call__(self, func):
+        def wrapped(*args, **kwargs):
+            for attempt in range(self.retries):
+                try:
+                    return func(*args, **kwargs)
+                except NetworkError as e:
+                    if attempt < self.retries - 1:
+                        time.sleep(self.delay)
+                        self.delay *= self.backoff
+                    else:
+                        raise e
+        return wrapped
 
-class ClickerNotActiveError(ClickerError):
-    """Raised when an action is attempted without an active clicker."""
-    def __init__(self):
-        super().__init__('Clicker is not active.')
-
-class InvalidClickPositionError(ClickerError):
-    """Raised when a click position is invalid."""
-    def __init__(self, position):
-        self.position = position
-        super().__init__(f'Invalid click position: {position}')
+@Retry(retries=5, delay=1)
+def make_network_call(url):
+    if random.choice([True, False]):  # Simulate network failure
+        raise NetworkError(f"Network error occurred while accessing {url}")
+    return f"Successfully accessed {url}"
