@@ -1,1 +1,25 @@
-class AutoClickerError(Exception):\n    """Base class for exceptions in the AutoClicker module."""\n    pass\n\nclass ConfigurationError(AutoClickerError):\n    """Raised when there is a configuration issue."""\n    def __init__(self, message):\n        super().__init__(message)\n\nclass ClickIntervalError(AutoClickerError):\n    """Raised when the click interval is invalid."""\n    def __init__(self, interval):\n        super().__init__(f"Invalid click interval: {interval}")\n\nclass MouseActionError(AutoClickerError):\n    """Raised when a mouse action fails."""\n    def __init__(self, action):\n        super().__init__(f"Mouse action failed: {action}")\n\n# Example usage:\n# raise ConfigurationError("Missing configuration file")\n# raise ClickIntervalError(0)\n# raise MouseActionError("click")\n
+class ClickerError(Exception):
+    """Base class for exceptions in the autoclicker."""
+    pass
+
+class InvalidConfigurationError(ClickerError):
+    """Raised when the configuration is invalid."""
+    def __init__(self, message):
+        super().__init__(message)
+
+class ClickRateExceededError(ClickerError):
+    """Raised when the click rate exceeds allowed limits."""
+    def __init__(self, limit):
+        self.limit = limit
+        super().__init__(f'Click rate exceeded the limit of {limit} clicks per second.')
+
+class ClickerNotActiveError(ClickerError):
+    """Raised when an action is attempted without an active clicker."""
+    def __init__(self):
+        super().__init__('Clicker is not active.')
+
+class InvalidClickPositionError(ClickerError):
+    """Raised when a click position is invalid."""
+    def __init__(self, position):
+        self.position = position
+        super().__init__(f'Invalid click position: {position}')
