@@ -1,32 +1,33 @@
 import logging
 
-# Set up a basic logger
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+# Configure logging settings
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
 class Logger:
     def __init__(self, name):
         self.logger = logging.getLogger(name)
 
-    def debug(self, message):
-        self.logger.debug(message)
+    def log_info(self, message):
+        try:
+            self.logger.info(message)
+        except Exception as e:
+            self.logger.error(f"Failed to log info: {e}")
 
-    def info(self, message):
-        self.logger.info(message)
+    def log_warning(self, message):
+        try:
+            self.logger.warning(message)
+        except Exception as e:
+            self.logger.error(f"Failed to log warning: {e}")
 
-    def warning(self, message):
-        self.logger.warning(message)
+    def log_error(self, message):
+        try:
+            self.logger.error(message)
+        except Exception as e:
+            self.logger.error(f"Failed to log error: {e}")
 
-    def error(self, message):
-        self.logger.error(message)
-
-    def critical(self, message):
-        self.logger.critical(message)
-
-    def set_level(self, level):
-        self.logger.setLevel(level)
-
-# Example usage
-if __name__ == '__main__':
-    log = Logger('SampleLogger')
-    log.info('This is an info message.')
-    log.error('This is an error message.')
+    def log_exception(self, e):
+        if isinstance(e, Exception):
+            self.logger.exception("An exception occurred:")
+        else:
+            self.logger.error("An unknown error occurred")
