@@ -1,33 +1,22 @@
 import logging
+from logging.handlers import RotatingFileHandler
 
-# Configure logging settings
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
-logger = logging.getLogger(__name__)
+def setup_logger(log_file='app.log', max_bytes=5*1024*1024, backup_count=3):
+    logger = logging.getLogger('dev_toolkit')
+    logger.setLevel(logging.DEBUG)
+    
+    handler = RotatingFileHandler(log_file, maxBytes=max_bytes, backupCount=backup_count)
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    handler.setFormatter(formatter)
+    
+    logger.addHandler(handler)
+    return logger
 
-class Logger:
-    def __init__(self, name):
-        self.logger = logging.getLogger(name)
-
-    def log_info(self, message):
-        try:
-            self.logger.info(message)
-        except Exception as e:
-            self.logger.error(f"Failed to log info: {e}")
-
-    def log_warning(self, message):
-        try:
-            self.logger.warning(message)
-        except Exception as e:
-            self.logger.error(f"Failed to log warning: {e}")
-
-    def log_error(self, message):
-        try:
-            self.logger.error(message)
-        except Exception as e:
-            self.logger.error(f"Failed to log error: {e}")
-
-    def log_exception(self, e):
-        if isinstance(e, Exception):
-            self.logger.exception("An exception occurred:")
-        else:
-            self.logger.error("An unknown error occurred")
+# Example usage
+if __name__ == '__main__':
+    logger = setup_logger()
+    logger.debug('This is a debug message.')
+    logger.info('Informational message.')
+    logger.warning('Warning message.')
+    logger.error('Error message.')
+    logger.critical('Critical message.')
