@@ -1,38 +1,21 @@
 import json
 import os
 
-DEFAULTS = {
-    "click_interval": 0.1,
-    "clicks_per_second": 10,
-    "hotkey": "F9",
-    "enabled": false
+DEFAULT_CONFIG = {
+    'click_interval': 0.1,
+    'num_clicks': 100,
+    'click_duration': 10,
+    'enabled': True
 }
 
-class ConfigLoader:
-    def __init__(self, config_file='config.json'):
-        self.config_file = config_file
-        self.config = self.load_config()
-
-    def load_config(self):
-        if os.path.exists(self.config_file):
-            with open(self.config_file, 'r') as file:
-                try:
-                    user_config = json.load(file)
-                except json.JSONDecodeError:
-                    print("Invalid JSON in config file. Using defaults.")
-                    return DEFAULTS
-            # Merge user config with defaults
-            return {**DEFAULTS, **user_config}
-        return DEFAULTS
-
-    def get(self, key, default=None):
-        return self.config.get(key, default)
-
-    def set(self, key, value):
-        self.config[key] = value
-        with open(self.config_file, 'w') as file:
-            json.dump(self.config, file, indent=4)
-
-if __name__ == '__main__':
-    config_loader = ConfigLoader()
-    print(config_loader.get('click_interval'))
+def load_config(file_path='config.json'):
+    """Loads configuration from a JSON file, merges with defaults."""
+    # Load default configuration
+    config = DEFAULT_CONFIG.copy()
+    # Load user configuration if the file exists
+    if os.path.isfile(file_path):
+        with open(file_path, 'r') as json_file:
+            user_config = json.load(json_file)
+            # Update default config with user config
+            config.update(user_config)
+    return config
