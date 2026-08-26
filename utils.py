@@ -1,20 +1,41 @@
-import time
-import requests
-from requests.exceptions import RequestException
+import json
+import os
+from typing import Dict, Any
 
-def retry_request(url, max_retries=5, backoff_factor=0.3):
-    retries = 0
-    while retries < max_retries:
-        try:
-            response = requests.get(url)
-            response.raise_for_status()  # Raise an error for HTTP errors
-            return response.json()  # Assuming we want JSON response
-        except RequestException as e:
-            print(f'Attempt {retries + 1} failed: {e}')
-            retries += 1
-            wait_time = backoff_factor * (2 ** retries)  # Exponential backoff
-            time.sleep(wait_time)
-    raise Exception(f'Max retries reached for URL: {url}')
+DEFAULT_CONFIG = {
+    "cps": 10,
+    "hotkey": "F6",
+    "button": "left",
+    "hold_time": 0.05
+}
 
-# Example usage:
-# response_data = retry_request('https://api.example.com/data')
+def load_autoclicker_config(filepath: str) -> Dict[str, Any]:
+    """Load configuration from JSON file or return defaults."""
+    if not os.path.exists(filepath):
+        save_autoclicker_config(filepath, DEFAULT_CONFIG)
+        return DEFAULT_CONFIG.copy()
+    
+    try:
+        with open(filepath, "r") as f:
+            data = json.load(f)
+            # Merge with defaults to ensure all keys exist
+            config = DEFAULT_CONFIG.copy()
+            config.update(data)
+            return config
+    except (json.JSONDecodeError, IOError):
+        return DEFAULT_CONFIG.copy()
+
+def save_autoclicker_config(filepath: str, config: Dict[str, Any]) -> bool:
+    """Save configuration dictionary to a JSON file."""
+    try:
+        with open(filepath, "w") as f:
+            json.dump(config, f, indent=4)
+        return True
+    except (IOError, TypeError):
+        return False
+
+def calculate_delay(cps: float) -> float:
+    """Calculate sleep delay in seconds based on clicks per second."""
+    if cps <= 0:
+        return 1.0
+    return 1.0 / float(cps)
