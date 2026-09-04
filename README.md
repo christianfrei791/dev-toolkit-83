@@ -1,36 +1,39 @@
 # dev-toolkit-83
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+`dev-toolkit-83` is a high-performance, Python-based autoclicker designed for task automation and precision testing. It utilizes low-level input libraries to ensure minimal latency and reliable execution across desktop environments.
 
-dev-toolkit-83 is a Python autoclicker built for developers who need reliable mouse automation during UI testing and repetitive workflows. It offers precise timing control with minimal setup and supports both scripted and interactive use.
+![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
 
 ## Features
-- Millisecond-precise click intervals with optional human-like jitter
-- Configurable left, right, and middle mouse button support
-- Global hotkeys for starting, pausing, and stopping without window focus
-- Session logging with click count and duration tracking
+
+*   **Configurable CPS:** Fine-tune your clicks per second with millisecond-level accuracy.
+*   **Smart Hotkeys:** Start, pause, and stop automation instantly using customizable keyboard triggers.
+*   **Dynamic Targeting:** Supports both fixed-coordinate clicking and follow-cursor modes.
+*   **Low Resource Footprint:** Optimized core logic ensures zero interference with background system processes.
 
 ## Installation
+
+Ensure you have Python 3.8+ installed. Clone the repository and install the required dependencies:
 
 ```bash
 git clone https://github.com/Developer/dev-toolkit-83.git
 cd dev-toolkit-83
-pip install pynput
+pip install -r requirements.txt
 ```
 
 ## Usage
 
-Run from the command line:
+To launch the autoclicker with default settings, execute the main script from your terminal:
 
 ```bash
-python autoclicker.py --interval 0.1 --clicks 500 --button left
+python main.py --cps 10 --hotkey F8
 ```
 
-Use programmatically:
+### Basic Example
+Once running, the application will enter a standby state. Press the assigned **hotkey** to toggle clicking mode. Use `Ctrl+C` in the terminal to safely terminate the process and release system input control.
 
-```python
-from autoclicker import AutoClicker
+## Disclaimer
+This tool is intended for personal automation and testing purposes only. Please ensure you comply with the Terms of Service of any third-party software before utilizing automated input tools.
 
-clicker = AutoClicker(interval=0.05, button="left")
-clicker.start()
-```
+## License
+Distributed under the MIT License. See `LICENSE` for more information.
