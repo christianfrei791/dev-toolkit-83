@@ -1,70 +1,37 @@
-import time
-from typing import Callable, Optional, Tuple
+import logging
+import pyautogui
 
+logger = logging.getLogger(__name__)
 
-class ClickHandler:
-    """Manages mouse click automation triggers and execution loops."""
+def safe_click(x: int, y: int, interval: float = 0.1):
+    """Performs a click with screen boundary and input validation."""
+    try:
+        screen_width, screen_height = pyautogui.size()
+        
+        if not (0 <= x < screen_width and 0 <= y < screen_height):
+            raise ValueError(f"Coordinates ({x}, {y}) out of screen bounds")
+            
+        pyautogui.click(x, y)
+        logger.debug(f"Successfully clicked at {x}, {y}")
+        
+    except pyautogui.FailSafeException:
+        logger.critical("Fail-safe triggered: mouse moved to corner")
+        raise
+    except ValueError as ve:
+        logger.error(f"Invalid input parameters: {ve}")
+    except Exception as e:
+        logger.error(f"Unexpected error during click execution: {e}")
 
-    def __init__(self, interval: float = 0.1, button: str = "left") -> None:
-        """Initialize click handler configuration.
+def execute_sequence(sequence: list):
+    """Processes a list of coordinate tuples with error isolation."""
+    if not isinstance(sequence, list):
+        logger.error("Invalid sequence format: expected list")
+        return
 
-        Args:
-            interval: Delay in seconds between consecutive clicks.
-            button: Mouse button to simulate ('left', 'right', 'middle').
-        """
-        self.interval: float = interval
-        self.button: str = button.lower()
-        self.is_running: bool = False
-        self._click_count: int = 0
-
-    def set_interval(self, seconds: float) -> None:
-        """Update the time delay between clicks.
-
-        Args:
-            seconds: Minimum interval duration in seconds.
-        """
-        if seconds < 0.001:
-            raise ValueError("Interval must be at least 0.001 seconds")
-        self.interval = seconds
-
-    def trigger_click(
-        self,
-        position: Optional[Tuple[int, int]] = None,
-        callback: Optional[Callable[[int], None]] = None,
-    ) -> bool:
-        """Execute a single click action and optionally invoke a callback.
-
-        Args:
-            position: Optional (x, y) coordinates where click occurs.
-            callback: Optional function called after successful click.
-
-        Returns:
-            True if click action was executed, False if handler is stopped.
-        """
-        if not self.is_running:
-            return False
-
-        # Simulate click action
-        self._click_count += 1
-        if position:
-            _x, _y = position
-
-        if callback:
-            callback(self._click_count)
-
-        time.sleep(self.interval)
-        return True
-
-    def start(self) -> None:
-        """Enable the click handler execution state."""
-        self.is_running = True
-        self._click_count = 0
-
-    def stop(self) -> None:
-        """Disable click handler execution and reset active state."""
-        self.is_running = False
-
-    @property
-    def total_clicks(self) -> int:
-        """Get total number of clicks executed in current session."""
-        return self._click_count
+    for step in sequence:
+        try:
+            x, y = step
+            safe_click(x, y)
+        except (TypeError, ValueError) as e:
+            logger.warning(f"Skipping malformed coordinate point {step}: {e}")
+            continue
