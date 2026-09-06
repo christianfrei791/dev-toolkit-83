@@ -1,41 +1,35 @@
-import json
-import os
-from typing import Dict, Any
+import time
+import functools
+import logging
 
-DEFAULT_CONFIG = {
-    "cps": 10,
-    "hotkey": "F6",
-    "button": "left",
-    "hold_time": 0.05
-}
+logger = logging.getLogger(__name__)
 
-def load_autoclicker_config(filepath: str) -> Dict[str, Any]:
-    """Load configuration from JSON file or return defaults."""
-    if not os.path.exists(filepath):
-        save_autoclicker_config(filepath, DEFAULT_CONFIG)
-        return DEFAULT_CONFIG.copy()
-    
-    try:
-        with open(filepath, "r") as f:
-            data = json.load(f)
-            # Merge with defaults to ensure all keys exist
-            config = DEFAULT_CONFIG.copy()
-            config.update(data)
-            return config
-    except (json.JSONDecodeError, IOError):
-        return DEFAULT_CONFIG.copy()
+def retry_operation(max_attempts=3, delay=1.0, backoff=2.0):
+    """Decorator for retrying network operations on failure."""
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            attempts = 0
+            current_delay = delay
+            
+            while attempts < max_attempts:
+                try:
+                    return func(*args, **kwargs)
+                except Exception as e:
+                    attempts += 1
+                    if attempts >= max_attempts:
+                        logger.error(f"Final attempt failed for {func.__name__}: {e}")
+                        raise
+                    
+                    logger.warning(f"Attempt {attempts} failed. Retrying in {current_delay}s...")
+                    time.sleep(current_delay)
+                    current_delay *= backoff
+            
+        return wrapper
+    return decorator
 
-def save_autoclicker_config(filepath: str, config: Dict[str, Any]) -> bool:
-    """Save configuration dictionary to a JSON file."""
-    try:
-        with open(filepath, "w") as f:
-            json.dump(config, f, indent=4)
-        return True
-    except (IOError, TypeError):
+def validate_network_response(response):
+    """Basic validation for network operation response codes."""
+    if response is None:
         return False
-
-def calculate_delay(cps: float) -> float:
-    """Calculate sleep delay in seconds based on clicks per second."""
-    if cps <= 0:
-        return 1.0
-    return 1.0 / float(cps)
+    return hasattr(response, 'status_code') and 200 <= response.status_code < 300
