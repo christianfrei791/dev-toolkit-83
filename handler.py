@@ -1,37 +1,32 @@
-import logging
+import time
 import pyautogui
+from typing import Dict, Any, Optional
 
-logger = logging.getLogger(__name__)
+class ClickHandler:
+    """Handles the execution logic for mouse click events."""
 
-def safe_click(x: int, y: int, interval: float = 0.1):
-    """Performs a click with screen boundary and input validation."""
-    try:
-        screen_width, screen_height = pyautogui.size()
-        
-        if not (0 <= x < screen_width and 0 <= y < screen_height):
-            raise ValueError(f"Coordinates ({x}, {y}) out of screen bounds")
-            
-        pyautogui.click(x, y)
-        logger.debug(f"Successfully clicked at {x}, {y}")
-        
-    except pyautogui.FailSafeException:
-        logger.critical("Fail-safe triggered: mouse moved to corner")
-        raise
-    except ValueError as ve:
-        logger.error(f"Invalid input parameters: {ve}")
-    except Exception as e:
-        logger.error(f"Unexpected error during click execution: {e}")
+    def __init__(self, settings: Dict[str, Any]) -> None:
+        """Initializes the handler with user-defined click configuration."""
+        self.interval: float = float(settings.get("interval", 0.1))
+        self.button: str = str(settings.get("button", "left"))
 
-def execute_sequence(sequence: list):
-    """Processes a list of coordinate tuples with error isolation."""
-    if not isinstance(sequence, list):
-        logger.error("Invalid sequence format: expected list")
-        return
-
-    for step in sequence:
+    def execute_click(self, x: int, y: int) -> bool:
+        """Performs a mouse click at specified coordinates."""
         try:
-            x, y = step
-            safe_click(x, y)
-        except (TypeError, ValueError) as e:
-            logger.warning(f"Skipping malformed coordinate point {step}: {e}")
-            continue
+            pyautogui.click(x=x, y=y, button=self.button)
+            time.sleep(self.interval)
+            return True
+        except Exception:
+            return False
+
+    def execute_sequence(self, positions: list[tuple[int, int]]) -> None:
+        """Iterates through a list of positions and triggers clicks."""
+        for x, y in positions:
+            self.execute_click(x, y)
+
+    def update_settings(self, new_settings: Dict[str, Any]) -> None:
+        """Updates runtime configuration for click behavior."""
+        if "interval" in new_settings:
+            self.interval = float(new_settings["interval"])
+        if "button" in new_settings:
+            self.button = str(new_settings["button"])
