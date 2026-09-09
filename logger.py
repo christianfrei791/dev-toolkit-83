@@ -1,35 +1,33 @@
 import logging
-from logging.handlers import RotatingFileHandler
-import os
+import sys
+from typing import Optional
 
-def setup_logger(name='dev-toolkit-83', log_file='toolkit.log', level=logging.INFO):
-    """
-    Configures a rotating file logger for the autoclicker.
-    Keeps 5 files of 1MB each.
-    """
-    logger = logging.getLogger(name)
-    logger.setLevel(level)
+class Logger:
+    """Handles logging operations for dev-toolkit-83."""
 
-    # Prevent duplicate handlers if re-initialized
-    if not logger.handlers:
-        formatter = logging.Formatter(
-            '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-        )
-
-        # Rotation setup: max 1MB per file, keep 5 backups
-        handler = RotatingFileHandler(
-            log_file, maxBytes=1024*1024, backupCount=5
+    def __init__(self, name: str, level: int = logging.INFO) -> None:
+        self.logger: logging.Logger = logging.getLogger(name)
+        self.logger.setLevel(level)
+        
+        handler: logging.StreamHandler = logging.StreamHandler(sys.stdout)
+        formatter: logging.Formatter = logging.Formatter(
+            "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
         )
         handler.setFormatter(formatter)
-        
-        logger.addHandler(handler)
-        
-        # Also output to console for development visibility
-        console_handler = logging.StreamHandler()
-        console_handler.setFormatter(formatter)
-        logger.addHandler(console_handler)
+        self.logger.addHandler(handler)
 
-    return logger
+    def info(self, message: str) -> None:
+        """Logs informational messages to stdout."""
+        self.logger.info(message)
 
-# Instance for global application usage
-logger = setup_logger()
+    def error(self, message: str, exc_info: Optional[bool] = False) -> None:
+        """Logs error messages to stdout."""
+        self.logger.error(message, exc_info=exc_info)
+
+    def debug(self, message: str) -> None:
+        """Logs debug-level diagnostics."""
+        self.logger.debug(message)
+
+def get_logger(name: str) -> Logger:
+    """Factory function to retrieve a configured logger."""
+    return Logger(name)
