@@ -1,40 +1,38 @@
 import time
-import functools
-import logging
+import threading
+from typing import Callable, Optional
 
-logger = logging.getLogger(__name__)
+class OptimizedClicker:
+    """High-precision click loop controller using high-resolution performance counters."""
 
-def retry_operation(retries=3, delay=2, backoff=2):
-    """Decorator for retrying network operations with exponential backoff."""
-    def decorator(func):
-        @functools.wraps(func)
-        def wrapper(*args, **kwargs):
-            current_delay = delay
-            for attempt in range(retries):
-                try:
-                    return func(*args, **kwargs)
-                except (ConnectionError, TimeoutError) as e:
-                    if attempt == retries - 1:
-                        logger.error(f"Final attempt failed for {func.__name__}: {e}")
-                        raise
-                    logger.warning(f"Retry {attempt + 1}/{retries} after error: {e}")
-                    time.sleep(current_delay)
-                    current_delay *= backoff
-            return None
-        return wrapper
-    return decorator
+    def __init__(self, click_action: Callable[[], None], interval: float = 0.01) -> None:
+        self.click_action = click_action
+        self.interval = max(0.001, interval)
+        self._running = False
+        self._thread: Optional[threading.Thread] = None
 
-@retry_operation(retries=3, delay=1)
-def perform_network_request(url):
-    """Simulated network request that may fail."""
-    # Placeholder for actual network logic like requests.get()
-    logger.info(f"Requesting data from {url}")
-    return {"status": 200, "data": "success"}
+    def start(self) -> None:
+        """Starts the execution thread if not already active."""
+        if self._running:
+            return
+        self._running = True
+        self._thread = threading.Thread(target=self._run_loop, daemon=True)
+        self._thread.start()
 
-if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
-    try:
-        result = perform_network_request("https://api.dev-toolkit-83.io")
-        print(result)
-    except Exception as e:
-        print(f"Operation failed: {e}")
+    def stop(self) -> None:
+        """Stops the execution thread safely."""
+        self._running = False
+        if self._thread and self._thread.is_alive():
+            self._thread.join(timeout=1.0)
+
+    def _run_loop(self) -> None:
+        """Executes actions with precise timing drift compensation."""
+        next_time = time.perf_counter()
+        while self._running:
+            self.click_action()
+            next_time += self.interval
+            sleep_time = next_time - time.perf_counter()
+            if sleep_time > 0:
+                time.sleep(sleep_time)
+            else:
+                next_time = time.perf_counter()
