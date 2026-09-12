@@ -1,35 +1,32 @@
-import time
-import functools
-import logging
+import json
+import os
+from typing import Dict, Any
 
-logger = logging.getLogger('dev-toolkit-83')
+def load_clicker_profile(filepath: str) -> Dict[str, Any]:
+    """Load autoclicker settings from a JSON file."""
+    if not os.path.exists(filepath):
+        return {"interval": 0.1, "button": "left", "clicks": 0}
 
-def retry_network_operation(max_retries=3, delay=1.5, backoff=2):
-    """
-    Decorator to retry network-bound operations with exponential backoff.
-    """
-    def decorator(func):
-        @functools.wraps(func)
-        def wrapper(*args, **kwargs):
-            current_delay = delay
-            for attempt in range(1, max_retries + 1):
-                try:
-                    return func(*args, **kwargs)
-                except (ConnectionError, TimeoutError) as e:
-                    if attempt == max_retries:
-                        logger.error(f"Final attempt {attempt} failed: {e}")
-                        raise
-                    
-                    logger.warning(f"Attempt {attempt} failed, retrying in {current_delay}s...")
-                    time.sleep(current_delay)
-                    current_delay *= backoff
-        return wrapper
-    return decorator
+    try:
+        with open(filepath, 'r') as f:
+            return json.load(f)
+    except (json.JSONDecodeError, IOError):
+        return {"interval": 0.1, "button": "left", "clicks": 0}
 
-def validate_network_response(response):
-    """
-    Simple validator to check if the network response is valid.
-    """
-    if response is None or response.status_code != 200:
+def save_clicker_profile(filepath: str, data: Dict[str, Any]) -> bool:
+    """Persist autoclicker configuration to disk."""
+    try:
+        with open(filepath, 'w') as f:
+            json.dump(data, f, indent=4)
+        return True
+    except IOError:
         return False
-    return True
+
+def validate_interval(value: float) -> float:
+    """Ensure interval is within safe operating range."""
+    return max(0.01, min(value, 60.0))
+
+def format_click_stats(count: int, duration: float) -> str:
+    """Convert performance metrics into readable strings."""
+    cps = count / duration if duration > 0 else 0
+    return f"Total: {count} | Avg: {cps:.2f} clicks/sec"
