@@ -1,33 +1,22 @@
-import sys
-from enum import Enum
-from dataclasses import dataclass
+from typing import Final
 
-# Configuration for performance optimization
-# Using slots to reduce memory footprint of clicking profiles
+# Configuration constants for autoclicker operations
 
-@dataclass(slots=True, frozen=True)
-class ClickSettings:
-    interval: float
-    jitter: float
-    button: str
+DEFAULT_INTERVAL: Final[float] = 0.1
+MAX_INTERVAL: Final[float] = 60.0
+MIN_INTERVAL: Final[float] = 0.001
 
-class ClickType(Enum):
-    LEFT = 'left'
-    RIGHT = 'right'
-    MIDDLE = 'middle'
+DEFAULT_BUTTON: Final[str] = 'left'
+SUPPORTED_BUTTONS: Final[tuple[str, ...]] = ('left', 'middle', 'right')
 
-# System constants for optimized polling rate
-DEFAULT_POLLING_RATE = 0.001
-MAX_THREADS = 4
-CACHE_SIZE = 128
+# Application metadata
+APP_NAME: Final[str] = 'dev-toolkit-83'
+VERSION: Final[str] = '1.0.2'
 
-# Buffer settings to prevent memory bloat during high-speed sessions
-MAX_BUFFER_ENTRIES = 1000
+# Hotkey configurations
+TOGGLE_KEY: Final[str] = 'f6'
+EXIT_KEY: Final[str] = 'esc'
 
-# Platform-specific scaling constants
-IS_WINDOWS = sys.platform == 'win32'
-PLATFORM_PRECISION = 0.0001 if IS_WINDOWS else 0.001
-
-def get_optimized_interval(base: float) -> float:
-    """Adjusts sleep interval for target system overhead."""
-    return max(base, PLATFORM_PRECISION)
+def get_app_title() -> str:
+    """Return the formatted application title."""
+    return f"{APP_NAME} v{VERSION}"
