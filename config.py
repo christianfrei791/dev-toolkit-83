@@ -1,37 +1,56 @@
 import json
 import os
-from typing import Dict, Any
+from typing import Any, Dict
 
-DEFAULT_CONFIG = {
-    "interval": 0.1,
-    "button": "left",
-    "repeat": 0,
-    "hotkey": "f6"
+DEFAULT_CONFIG: Dict[str, Any] = {
+    "click_interval_seconds": 0.1,
+    "mouse_button": "left",
+    "click_type": "single",
+    "start_hotkey": "f6",
+    "stop_hotkey": "f7",
+    "max_clicks": 0  # 0 means infinite clicks
 }
 
-def load_config(filepath: str = "config.json") -> Dict[str, Any]:
-    """Loads configuration from file or returns defaults."""
-    if not os.path.exists(filepath):
-        save_config(DEFAULT_CONFIG, filepath)
-        return DEFAULT_CONFIG
+class ConfigLoader:
+    """Loads, validates, and saves configuration settings for the autoclicker."""
 
-    try:
-        with open(filepath, "r") as f:
-            config = json.load(f)
-            # Merge with defaults to ensure missing keys are present
-            return {**DEFAULT_CONFIG, **config}
-    except (json.JSONDecodeError, IOError):
-        return DEFAULT_CONFIG
+    def __init__(self, filepath: str = "autoclicker_config.json"):
+        self.filepath = filepath
+        self.config = self.load()
 
-def save_config(config: Dict[str, Any], filepath: str = "config.json") -> None:
-    """Persists current configuration to disk."""
-    try:
-        with open(filepath, "w") as f:
-            json.dump(config, f, indent=4)
-    except IOError as e:
-        print(f"Failed to save configuration: {e}")
+    def load(self) -> Dict[str, Any]:
+        """Loads config from file, merging with defaults to handle missing keys."""
+        if not os.path.exists(self.filepath):
+            self.save(DEFAULT_CONFIG)
+            return DEFAULT_CONFIG.copy()
 
-if __name__ == "__main__":
-    # Example usage for dev-toolkit-83
-    current_cfg = load_config()
-    print(f"Loaded settings: {current_cfg}")
+        try:
+            with open(self.filepath, "r", encoding="utf-8") as f:
+                loaded_data = json.load(f)
+                
+            # Merge defaults with loaded data to ensure schema completeness
+            merged_config = DEFAULT_CONFIG.copy()
+            if isinstance(loaded_data, dict):
+                for key, value in loaded_data.items():
+                    if key in DEFAULT_CONFIG:
+                        # Basic type safety check
+                        if isinstance(value, type(DEFAULT_CONFIG[key])):
+                            merged_config[key] = value
+            return merged_config
+        except (json.JSONDecodeError, IOError):
+            # Return default config if file is corrupted or unreadable
+            return DEFAULT_CONFIG.copy()
+
+    def save(self, data: Dict[str, Any]) -> bool:
+        """Saves the provided configuration dictionary to the file path."""
+        try:
+            with open(self.filepath, "w", encoding="utf-8") as f:
+                json.dump(data, f, indent=4)
+            self.config = data
+            return True
+        except IOError:
+            return False
+
+    def get(self, key: str) -> Any:
+        """Retrieves a config value, falling back to defaults if missing."""
+        return self.config.get(key, DEFAULT_CONFIG.get(key))
