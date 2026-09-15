@@ -1,15 +1,15 @@
 # dev-toolkit-83
 
-`dev-toolkit-83` is a high-performance, Python-based autoclicker designed for task automation and precision testing. It utilizes low-level input libraries to ensure minimal latency and reliable execution across desktop environments.
+`dev-toolkit-83` is a high-performance Python-based autoclicker designed for precision, speed, and low CPU overhead. It provides a lightweight solution for automating repetitive mouse tasks with customizable intervals and hotkey controls.
 
-![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ## Features
 
-*   **Configurable CPS:** Fine-tune your clicks per second with millisecond-level accuracy.
-*   **Smart Hotkeys:** Start, pause, and stop automation instantly using customizable keyboard triggers.
-*   **Dynamic Targeting:** Supports both fixed-coordinate clicking and follow-cursor modes.
-*   **Low Resource Footprint:** Optimized core logic ensures zero interference with background system processes.
+*   **Low-Latency Execution:** Built using `pynput` for near-instantaneous event simulation.
+*   **Dynamic Intervals:** Support for custom millisecond delays between clicks to mimic human behavior.
+*   **Hotkey Integration:** Global listener setup to start or stop the automation sequence at any time without window focus.
+*   **Multi-Button Support:** Ability to toggle between left, middle, and right mouse button automation.
 
 ## Installation
 
@@ -23,17 +23,18 @@ pip install -r requirements.txt
 
 ## Usage
 
-To launch the autoclicker with default settings, execute the main script from your terminal:
+You can launch the clicker directly via the terminal. By default, the script is configured to trigger on the F6 key and stop on F7.
 
 ```bash
-python main.py --cps 10 --hotkey F8
+# Basic execution with default settings
+python main.py --interval 0.5 --button left
+
+# Execution with custom hotkeys
+python main.py --start-key f9 --stop-key f10
 ```
 
-### Basic Example
-Once running, the application will enter a standby state. Press the assigned **hotkey** to toggle clicking mode. Use `Ctrl+C` in the terminal to safely terminate the process and release system input control.
+### Configuration
+Adjust the `config.json` file in the root directory to permanently save your preferred click patterns, coordinate locking, and delay randomization settings.
 
-## Disclaimer
-This tool is intended for personal automation and testing purposes only. Please ensure you comply with the Terms of Service of any third-party software before utilizing automated input tools.
-
-## License
-Distributed under the MIT License. See `LICENSE` for more information.
+## Safety & Disclaimer
+*This tool is intended for educational purposes and productivity automation. Please ensure you are in compliance with the Terms of Service of any application where you utilize this tool.*
