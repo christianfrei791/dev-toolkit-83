@@ -1,36 +1,41 @@
 import pyautogui
 import time
-import logging
+import threading
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger('dev-toolkit-83')
+class AutoClicker:
+    """Core autoclicker engine for dev-toolkit-83."""
+    def __init__(self, interval=0.1, button='left'):
+        self.interval = interval
+        self.button = button
+        self.running = False
+        self._thread = None
 
-def execute_click(x, y, interval=0.1):
-    """Performs a safe click operation with boundary validation."""
+    def _click_loop(self):
+        while self.running:
+            pyautogui.click(button=self.button)
+            time.sleep(self.interval)
+
+    def start(self):
+        if not self.running:
+            self.running = True
+            self._thread = threading.Thread(target=self._click_loop, daemon=True)
+            self._thread.start()
+
+    def stop(self):
+        self.running = False
+        if self._thread:
+            self._thread.join()
+
+    def set_interval(self, seconds):
+        self.interval = max(0.01, seconds)
+
+if __name__ == '__main__':
+    clicker = AutoClicker(interval=0.5)
     try:
-        screen_width, screen_height = pyautogui.size()
-        
-        if not (0 <= x <= screen_width and 0 <= y <= screen_height):
-            raise ValueError(f"Coordinates ({x}, {y}) outside screen bounds.")
-        
-        pyautogui.click(x, y)
-        time.sleep(max(0, interval))
-        
-    except pyautogui.FailSafeException:
-        logger.error("Fail-safe triggered by user. Aborting.")
-        raise
-    except ValueError as e:
-        logger.warning(f"Validation error: {e}")
-    except Exception as e:
-        logger.critical(f"Unexpected click failure: {e}")
-
-def run_sequence(clicks):
-    """Iterates through click list with recovery logic."""
-    for point in clicks:
-        try:
-            execute_click(point.get('x', 0), point.get('y', 0))
-        except (TypeError, AttributeError):
-            logger.error("Invalid data structure in click sequence")
-            continue
-        except Exception:
-            break
+        print('Starting clicker... Press Ctrl+C to stop.')
+        clicker.start()
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        clicker.stop()
+        print('\nStopped.')
