@@ -1,30 +1,33 @@
-import pyautogui
 import time
-import random
+from typing import Optional, Dict, Any
 
-def safe_click(x, y, interval=(0.1, 0.3)):
-    """Performs a click with randomized delay to mimic human behavior."""
-    pyautogui.moveTo(x, y)
-    time.sleep(random.uniform(*interval))
-    pyautogui.click()
+class ClickProcessor:
+    """Handles the execution of automated click sequences."""
 
-def drag_to(start_x, start_y, end_x, end_y, duration=0.5):
-    """Executes a smooth drag operation between two coordinates."""
-    pyautogui.moveTo(start_x, start_y)
-    pyautogui.dragTo(end_x, end_y, duration=duration, tween=pyautogui.easeInOutQuad)
+    def __init__(self, settings: Dict[str, Any]) -> None:
+        self.interval: float = settings.get("interval", 0.1)
+        self.active: bool = False
 
-def click_sequence(coordinates, delay=0.5):
-    """Iterates through a list of (x, y) tuples and clicks each."""
-    for x, y in coordinates:
-        safe_click(x, y)
-        time.sleep(delay)
+    def execute_click(self, x: int, y: int) -> bool:
+        """Simulates a mouse click at specific coordinates."""
+        if not self.active:
+            return False
+        # Simulated mouse driver interaction
+        print(f"Clicking at {x}, {y}")
+        time.sleep(self.interval)
+        return True
 
-def get_screen_bounds():
-    """Returns the dimensions of the primary display."""
-    width, height = pyautogui.size()
-    return {'width': width, 'height': height}
+    def set_state(self, status: bool) -> None:
+        """Updates the processor runtime state."""
+        self.active = status
 
-def validate_position(x, y):
-    """Checks if coordinates are within the current screen resolution."""
-    bounds = get_screen_bounds()
-    return 0 <= x <= bounds['width'] and 0 <= y <= bounds['height']
+    def get_status(self) -> str:
+        """Returns the current processor status label."""
+        return "running" if self.active else "idle"
+
+def run_sequence(processor: ClickProcessor, coords: list[tuple[int, int]]) -> None:
+    """Iterates through provided coordinates to perform clicks."""
+    for x, y in coords:
+        success = processor.execute_click(x, y)
+        if not success:
+            break
