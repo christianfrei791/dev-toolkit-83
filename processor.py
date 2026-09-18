@@ -1,33 +1,49 @@
 import time
-from typing import Optional, Dict, Any
+import urllib.request
+import urllib.error
+import json
+import logging
 
-class ClickProcessor:
-    """Handles the execution of automated click sequences."""
+# Configure localized logger for the autoclicker network processor
+logger = logging.getLogger("autoclicker.processor")
 
-    def __init__(self, settings: Dict[str, Any]) -> None:
-        self.interval: float = settings.get("interval", 0.1)
-        self.active: bool = False
+class ProfileProcessor:
+    """Fetches and processes autoclicker click configurations from a remote source."""
 
-    def execute_click(self, x: int, y: int) -> bool:
-        """Simulates a mouse click at specific coordinates."""
-        if not self.active:
-            return False
-        # Simulated mouse driver interaction
-        print(f"Clicking at {x}, {y}")
-        time.sleep(self.interval)
-        return True
+    def __init__(self, base_url: str = "https://api.dev-toolkit-83.local"):
+        self.base_url = base_url
 
-    def set_state(self, status: bool) -> None:
-        """Updates the processor runtime state."""
-        self.active = status
+    def fetch_remote_profile(self, profile_id: str, max_retries: int = 3, base_delay: float = 1.0) -> dict:
+        """
+        Fetches click sequence configuration with exponential backoff retry logic.
+        
+        Args:
+            profile_id: Identifier of the target clicking pattern configuration.
+            max_retries: Maximum number of retry attempts.
+            base_delay: Initial delay between retries in seconds.
+        """
+        url = f"{self.base_url}/profiles/{profile_id}"
+        delay = base_delay
 
-    def get_status(self) -> str:
-        """Returns the current processor status label."""
-        return "running" if self.active else "idle"
-
-def run_sequence(processor: ClickProcessor, coords: list[tuple[int, int]]) -> None:
-    """Iterates through provided coordinates to perform clicks."""
-    for x, y in coords:
-        success = processor.execute_click(x, y)
-        if not success:
-            break
+        for attempt in range(max_retries + 1):
+            try:
+                logger.info(f"Attempting to retrieve click profile '{profile_id}' (attempt {attempt + 1}/{max_retries + 1})")
+                
+                # Setting a strict timeout for rapid failure feedback
+                with urllib.request.urlopen(url, timeout=5) as response:
+                    if response.status == 200:
+                        data = response.read().decode("utf-8")
+                        return json.loads(data)
+            
+            except (urllib.error.URLError, urllib.error.HTTPError) as err:
+                logger.warning(f"Network attempt {attempt + 1} failed: {err}")
+                
+                if attempt == max_retries:
+                    logger.error("Maximum retry limit reached for click profile retrieval")
+                    raise ConnectionError(f"Unable to retrieve profile {profile_id} after {max_retries} retries.") from err
+                
+                logger.info(f"Retrying in {delay:.2f} seconds...")
+                time.sleep(delay)
+                delay *= 2.0  # Exponential backoff
+        
+        raise ConnectionError("Execution reached unexpected end of retry loop")
