@@ -1,44 +1,33 @@
-import random
-import re
-from typing import Tuple
+import time
+import functools
+import logging
 
+logger = logging.getLogger(__name__)
 
-def parse_time_interval(interval_str: str) -> float:
-    """Parses a time interval string (e.g., '500ms', '1.5s', '2m') and returns seconds.
+def retry_operation(retries=3, delay=2, backoff=2):
+    """Decorator for retrying network operations with exponential backoff."""
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            current_delay = delay
+            for attempt in range(retries):
+                try:
+                    return func(*args, **kwargs)
+                except Exception as e:
+                    if attempt == retries - 1:
+                        logger.error(f"Final attempt failed for {func.__name__}: {e}")
+                        raise
+                    
+                    logger.warning(f"Attempt {attempt + 1} failed, retrying in {current_delay}s...")
+                    time.sleep(current_delay)
+                    current_delay *= backoff
+            return None
+        return wrapper
+    return decorator
 
-    Defaults to seconds if no unit is provided.
-    """
-    match = re.match(r"^([\d.]+)\s*(ms|s|m)?$", interval_str.strip().lower())
-    if not match:
-        raise ValueError(
-            f"Invalid interval format: {interval_str}. Use e.g., '100ms', '2s', '1m'"
-        )
-
-    value, unit = match.groups()
-    val = float(value)
-
-    if unit == "ms":
-        return val / 1000.0
-    elif unit == "m":
-        return val * 60.0
-    return val  # Default to seconds
-
-
-def get_jittered_delay(base_delay: float, jitter_percentage: float) -> float:
-    """Calculates a delay with random human-like jitter added or subtracted."""
-    if jitter_percentage <= 0:
-        return max(0.0, base_delay)
-
-    factor = jitter_percentage / 100.0
-    min_delay = max(0.0, base_delay * (1 - factor))
-    max_delay = base_delay * (1 + factor)
-    return random.uniform(min_delay, max_delay)
-
-
-def is_within_bounds(
-    coords: Tuple[int, int], screen_size: Tuple[int, int]
-) -> bool:
-    """Checks if the target clicking coordinates are within screen boundaries."""
-    x, y = coords
-    width, height = screen_size
-    return 0 <= x <= width and 0 <= y <= height
+@retry_operation(retries=3, delay=1)
+def network_request_stub(url):
+    """Example network operation function."""
+    logger.info(f"Connecting to {url}")
+    # Simulate connection logic here
+    return True
