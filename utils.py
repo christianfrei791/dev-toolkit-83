@@ -1,33 +1,35 @@
 import time
-import functools
 import logging
+from typing import Optional
 
-logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger('dev-toolkit-83')
 
-def retry_operation(retries=3, delay=2, backoff=2):
-    """Decorator for retrying network operations with exponential backoff."""
-    def decorator(func):
-        @functools.wraps(func)
-        def wrapper(*args, **kwargs):
-            current_delay = delay
-            for attempt in range(retries):
-                try:
-                    return func(*args, **kwargs)
-                except Exception as e:
-                    if attempt == retries - 1:
-                        logger.error(f"Final attempt failed for {func.__name__}: {e}")
-                        raise
-                    
-                    logger.warning(f"Attempt {attempt + 1} failed, retrying in {current_delay}s...")
-                    time.sleep(current_delay)
-                    current_delay *= backoff
-            return None
-        return wrapper
-    return decorator
+def validate_interval(interval: float) -> float:
+    """Ensures click interval is within safe operational bounds."""
+    min_interval = 0.01
+    if interval < min_interval:
+        logger.warning(f"Interval {interval} too low, defaulting to {min_interval}")
+        return min_interval
+    return interval
 
-@retry_operation(retries=3, delay=1)
-def network_request_stub(url):
-    """Example network operation function."""
-    logger.info(f"Connecting to {url}")
-    # Simulate connection logic here
-    return True
+def format_duration(seconds: float) -> str:
+    """Converts raw seconds into readable time string."""
+    mins, secs = divmod(int(seconds), 60)
+    return f"{mins}m {secs}s"
+
+def get_timestamp() -> str:
+    """Returns formatted current system timestamp."""
+    return time.strftime("%Y-%m-%d %H:%M:%S")
+
+class ClickerState:
+    """Tracks the runtime state of the autoclicker."""
+    def __init__(self):
+        self.running = False
+        self.click_count = 0
+        self.start_time = 0.0
+
+    def reset(self):
+        self.running = False
+        self.click_count = 0
+        self.start_time = 0.0
