@@ -1,49 +1,52 @@
 import time
-import urllib.request
-import urllib.error
-import json
 import logging
+from typing import Tuple
 
-# Configure localized logger for the autoclicker network processor
 logger = logging.getLogger("autoclicker.processor")
 
-class ProfileProcessor:
-    """Fetches and processes autoclicker click configurations from a remote source."""
+class ClickValidationError(Exception):
+    """Custom exception for invalid click configuration."""
+    pass
 
-    def __init__(self, base_url: str = "https://api.dev-toolkit-83.local"):
-        self.base_url = base_url
+class ClickProcessor:
+    """Processes and simulates autoclicker actions with robust error handling."""
+    def __init__(self, screen_resolution: Tuple[int, int] = (1920, 1080)):
+        self.max_x, self.max_y = screen_resolution
+        self.min_interval = 0.001  # Safe minimum threshold of 1 millisecond
+        self.max_clicks_limit = 5000  # Hard ceiling to prevent system lockups
 
-    def fetch_remote_profile(self, profile_id: str, max_retries: int = 3, base_delay: float = 1.0) -> dict:
-        """
-        Fetches click sequence configuration with exponential backoff retry logic.
+    def validate_parameters(self, x: int, y: int, interval: float, clicks: int) -> None:
+        """Validates coordinate boundaries, timing safety, and click count limits."""
+        if not (0 <= x <= self.max_x) or not (0 <= y <= self.max_y):
+            raise ClickValidationError(f"Target coordinates ({x}, {y}) exceed bounds of {self.max_x}x{self.max_y}")
         
-        Args:
-            profile_id: Identifier of the target clicking pattern configuration.
-            max_retries: Maximum number of retry attempts.
-            base_delay: Initial delay between retries in seconds.
-        """
-        url = f"{self.base_url}/profiles/{profile_id}"
-        delay = base_delay
+        if interval < self.min_interval:
+            raise ClickValidationError(f"Interval {interval}s violates safety threshold of {self.min_interval}s")
+        
+        if clicks <= 0 or clicks > self.max_clicks_limit:
+            raise ClickValidationError(f"Requested click count {clicks} exceeds safe range (1-{self.max_clicks_limit})")
 
-        for attempt in range(max_retries + 1):
-            try:
-                logger.info(f"Attempting to retrieve click profile '{profile_id}' (attempt {attempt + 1}/{max_retries + 1})")
-                
-                # Setting a strict timeout for rapid failure feedback
-                with urllib.request.urlopen(url, timeout=5) as response:
-                    if response.status == 200:
-                        data = response.read().decode("utf-8")
-                        return json.loads(data)
+    def process_click_sequence(self, x: int, y: int, interval: float, clicks: int) -> int:
+        """Safe execution loop containing defensive checks and exception containment."""
+        completed_clicks = 0
+        try:
+            self.validate_parameters(x, y, interval, clicks)
             
-            except (urllib.error.URLError, urllib.error.HTTPError) as err:
-                logger.warning(f"Network attempt {attempt + 1} failed: {err}")
+            for _ in range(clicks):
+                # Mock click dispatch representing low-level mouse API call
+                # Safety check: If user forced mouse to top-left corner, break immediately (failsafe)
+                if x == 0 and y == 0:
+                    logger.warning("Failsafe triggered by top-left coordinate request")
+                    break
                 
-                if attempt == max_retries:
-                    logger.error("Maximum retry limit reached for click profile retrieval")
-                    raise ConnectionError(f"Unable to retrieve profile {profile_id} after {max_retries} retries.") from err
+                time.sleep(interval)
+                completed_clicks += 1
                 
-                logger.info(f"Retrying in {delay:.2f} seconds...")
-                time.sleep(delay)
-                delay *= 2.0  # Exponential backoff
-        
-        raise ConnectionError("Execution reached unexpected end of retry loop")
+        except ClickValidationError as err:
+            logger.error(f"Execution rejected: {err}")
+            raise
+        except Exception as unexpected:
+            logger.error(f"An unexpected error occurred during execution: {unexpected}")
+            raise RuntimeWarning("Click loop interrupted due to system error") from unexpected
+
+        return completed_clicks
