@@ -1,35 +1,29 @@
 import time
+import functools
 import logging
-from typing import Optional
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+# Configure logger for dev-toolkit-83
 logger = logging.getLogger('dev-toolkit-83')
 
-def validate_interval(interval: float) -> float:
-    """Ensures click interval is within safe operational bounds."""
-    min_interval = 0.01
-    if interval < min_interval:
-        logger.warning(f"Interval {interval} too low, defaulting to {min_interval}")
-        return min_interval
-    return interval
-
-def format_duration(seconds: float) -> str:
-    """Converts raw seconds into readable time string."""
-    mins, secs = divmod(int(seconds), 60)
-    return f"{mins}m {secs}s"
-
-def get_timestamp() -> str:
-    """Returns formatted current system timestamp."""
-    return time.strftime("%Y-%m-%d %H:%M:%S")
-
-class ClickerState:
-    """Tracks the runtime state of the autoclicker."""
-    def __init__(self):
-        self.running = False
-        self.click_count = 0
-        self.start_time = 0.0
-
-    def reset(self):
-        self.running = False
-        self.click_count = 0
-        self.start_time = 0.0
+def retry_network_operation(max_attempts=3, delay=2, exceptions=(ConnectionError, TimeoutError)):
+    """
+    Decorator to implement retry logic for network-bound tasks.
+    """
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            attempts = 0
+            while attempts < max_attempts:
+                try:
+                    return func(*args, **kwargs)
+                except exceptions as e:
+                    attempts += 1
+                    if attempts >= max_attempts:
+                        logger.error(f"Final attempt failed for {func.__name__}: {e}")
+                        raise
+                    
+                    logger.warning(f"Attempt {attempts} failed for {func.__name__}, retrying in {delay}s...")
+                    time.sleep(delay)
+            return None
+        return wrapper
+    return decorator
