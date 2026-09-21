@@ -1,68 +1,35 @@
-import json
-from typing import Any, Dict, List
+import logging
+import pyautogui
+from typing import Tuple, Optional
 
+logger = logging.getLogger(__name__)
 
-def validate_click_action(action: Dict[str, Any]) -> bool:
-    """Validates a single autoclicker action configuration.
+def get_safe_coordinates(x: int, y: int) -> Optional[Tuple[int, int]]:
+    """Validates coordinates against screen dimensions."""
+    try:
+        screen_width, screen_height = pyautogui.size()
+        if 0 <= x < screen_width and 0 <= y < screen_height:
+            return (x, y)
+        logger.warning(f"Coordinates ({x}, {y}) out of bounds.")
+        return None
+    except pyautogui.FailSafeException as e:
+        logger.error(f"Critical fail-safe triggered: {e}")
+        return None
+    except Exception as e:
+        logger.error(f"Unexpected error validating screen geometry: {e}")
+        return None
 
-    An action must contain a 'button' (left/right/middle), a positive 'interval' 
-    value, and optionally, both 'x' and 'y' integer coordinates.
-    """
-    required_keys = {"button", "interval"}
-    if not required_keys.issubset(action.keys()):
-        return False
-
-    if action["button"] not in {"left", "right", "middle"}:
+def execute_safe_click(x: int, y: int, interval: float = 0.1) -> bool:
+    """Wraps pyautogui click with boundary and error checks."""
+    coords = get_safe_coordinates(x, y)
+    if not coords:
         return False
 
     try:
-        interval = float(action["interval"])
-        if interval < 0.0:
-            return False
-    except (ValueError, TypeError):
-        return False
-
-    has_x = "x" in action and action["x"] is not None
-    has_y = "y" in action and action["y"] is not None
-    if has_x != has_y:
-        return False
-
-    if has_x:
-        try:
-            int(action["x"])
-            int(action["y"])
-        except (ValueError, TypeError):
-            return False
-
-    return True
-
-
-def load_autoclick_profile(file_path: str) -> List[Dict[str, Any]]:
-    """Loads, parses, and validates autoclicker actions from a JSON profile file.
-
-    Returns a list of standardized actions. Returns an empty list if the file is
-    missing, corrupted, or contains no valid actions.
-    """
-    try:
-        with open(file_path, "r", encoding="utf-8") as file:
-            data = json.load(file)
-
-        if not isinstance(data, list):
-            return []
-
-        validated_sequence = []
-        for item in data:
-            if isinstance(item, dict) and validate_click_action(item):
-                # Standardize schema
-                validated_sequence.append(
-                    {
-                        "button": str(item["button"]),
-                        "interval": float(item["interval"]),
-                        "x": int(item["x"]) if item.get("x") is not None else None,
-                        "y": int(item["y"]) if item.get("y") is not None else None,
-                        "double_click": bool(item.get("double_click", False)),
-                    }
-                )
-        return validated_sequence
-    except (FileNotFoundError, json.JSONDecodeError, PermissionError):
-        return []
+        pyautogui.click(x=coords[0], y=coords[1])
+        return True
+    except pyautogui.ImageNotFoundException:
+        logger.error("Click target element not located on screen.")
+    except Exception as e:
+        logger.error(f"Execution failure during click event: {e}")
+    return False
