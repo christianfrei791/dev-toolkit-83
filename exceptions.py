@@ -1,29 +1,35 @@
-class DevToolkitError(Exception):
-    """Base exception for dev-toolkit-83."""
+import time
+import functools
+import logging
+from typing import Callable, Any
+
+logger = logging.getLogger('dev-toolkit-83')
+
+class NetworkError(Exception):
+    """Base exception for network operations."""
     pass
 
-class ClickerConfigurationError(DevToolkitError):
-    """Raised when configuration parameters are invalid."""
-    pass
-
-class CoordinateOutOfBoundsError(DevToolkitError):
-    """Raised when click coordinates fall outside screen bounds."""
-    pass
-
-class ProcessExecutionError(DevToolkitError):
-    """Raised when the autoclicker process fails to start."""
-    pass
-
-class HardwareInputError(DevToolkitError):
-    """Raised when hardware input simulation fails."""
-    pass
-
-def validate_coordinates(x: int, y: int, screen_width: int, screen_height: int) -> None:
-    """Helper to ensure click coordinates are valid."""
-    if not (0 <= x < screen_width) or not (0 <= y < screen_height):
-        raise CoordinateOutOfBoundsError(f"Coordinates ({x}, {y}) out of range.")
-
-def raise_if_invalid_interval(interval: float) -> None:
-    """Helper to ensure click interval is positive."""
-    if interval <= 0:
-        raise ClickerConfigurationError("Interval must be a positive float.")
+def retry_operation(retries: int = 3, delay: float = 1.0):
+    """
+    Decorator to retry network operations on failure.
+    
+    :param retries: Number of attempts before giving up.
+    :param delay: Seconds to wait between attempts.
+    """
+    def decorator(func: Callable):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs) -> Any:
+            last_exception = None
+            for attempt in range(1, retries + 1):
+                try:
+                    return func(*args, **kwargs)
+                except Exception as e:
+                    last_exception = e
+                    logger.warning(f"Attempt {attempt} failed: {e}. Retrying in {delay}s...")
+                    if attempt < retries:
+                        time.sleep(delay)
+            
+            logger.error(f"Operation failed after {retries} attempts.")
+            raise NetworkError(f"Failed after {retries} attempts: {last_exception}")
+        return wrapper
+    return decorator
