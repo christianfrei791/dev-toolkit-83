@@ -1,38 +1,28 @@
-def validate_click_params(interval, count):
-    """
-    validates input parameters for click timing and frequency
-    """
-    if not isinstance(interval, (int, float)) or interval < 0.01:
-        raise ValueError("interval must be a float/int >= 0.01 seconds")
-    
-    if not isinstance(count, int) or count < -1:
-        raise ValueError("count must be -1 for infinite or integer > 0")
-    
-    return True
+import logging
 
-def sanitize_coordinates(x, y):
-    """
-    ensures screen coordinates are within sensible ranges
-    """
-    if not all(isinstance(val, int) for val in [x, y]):
-        raise ValueError("coordinates must be integer values")
-        
-    if x < 0 or y < 0:
-        raise ValueError("coordinates cannot be negative")
-        
-    return (x, y)
-
-def validate_process_input(data):
-    """
-    central validation gate for processor configuration
-    """
-    required = ['interval', 'count', 'x', 'y']
-    if not all(k in data for k in required):
-        return False
-        
+def validate_click_settings(interval, duration):
+    """Ensures input values meet functional constraints."""
     try:
-        validate_click_params(data['interval'], data['count'])
-        sanitize_coordinates(data['x'], data['y'])
+        if not isinstance(interval, (int, float)) or interval < 0.01:
+            raise ValueError(f"Invalid interval: {interval}. Must be >= 0.01")
+            
+        if not isinstance(duration, (int, float)) or duration < 0:
+            raise ValueError(f"Invalid duration: {duration}. Must be non-negative")
+            
         return True
-    except ValueError:
+    except ValueError as e:
+        logging.error(f"Validation failed: {e}")
         return False
+
+def sanitize_input(user_input):
+    """Cleans raw string input for processing."""
+    if isinstance(user_input, str):
+        return user_input.strip()
+    return user_input
+
+def check_bounds(x, y, max_w, max_h):
+    """Verifies coordinates are within screen dimensions."""
+    if 0 <= x <= max_w and 0 <= y <= max_h:
+        return True
+    logging.warning(f"Coordinates ({x}, {y}) out of screen bounds")
+    return False
