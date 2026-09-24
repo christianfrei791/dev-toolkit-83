@@ -1,32 +1,37 @@
 import time
-import logging
+import requests
+from functools import wraps
 
-def run_autoclicker(interval, count):
-    """Processes click commands with input validation."""
-    # Validate interval range (must be positive)
-    if not isinstance(interval, (int, float)) or interval <= 0:
-        raise ValueError(f"Invalid interval: {interval}. Must be a positive number.")
+def retry_operation(max_retries=3, delay=2):
+    """Decorator for retrying network operations on failure."""
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            attempts = 0
+            while attempts < max_retries:
+                try:
+                    return func(*args, **kwargs)
+                except (requests.exceptions.RequestException, ConnectionError) as e:
+                    attempts += 1
+                    if attempts >= max_retries:
+                        raise e
+                    time.sleep(delay)
+            return None
+        return wrapper
+    return decorator
 
-    # Validate click count (must be positive integer)
-    if not isinstance(count, int) or count < 1:
-        raise ValueError(f"Invalid count: {count}. Must be a positive integer.")
+@retry_operation(max_retries=3, delay=1)
+def fetch_remote_config(url):
+    """Fetches configuration data with built-in retry logic."""
+    response = requests.get(url, timeout=5)
+    response.raise_for_status()
+    return response.json()
 
-    logging.info(f"Starting autoclicker: {count} clicks at {interval}s interval.")
-
+def process_remote_task(url):
+    """Wrapper to process remote configuration data."""
     try:
-        for i in range(1, count + 1):
-            # Simulating click logic
-            print(f"Executing click {i}/{count}...")
-            time.sleep(interval)
-    except KeyboardInterrupt:
-        logging.warning("Autoclicker execution stopped by user.")
+        data = fetch_remote_config(url)
+        return data
     except Exception as e:
-        logging.error(f"Unexpected error during click processing: {e}")
-
-if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
-    # Execution example with valid inputs
-    try:
-        run_autoclicker(0.5, 5)
-    except ValueError as err:
-        logging.error(f"Configuration error: {err}")
+        print(f"Task processing failed after retries: {e}")
+        return None
