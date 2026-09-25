@@ -1,37 +1,28 @@
+import pyautogui
 import time
-import requests
-from functools import wraps
+import random
+from typing import Tuple
 
-def retry_operation(max_retries=3, delay=2):
-    """Decorator for retrying network operations on failure."""
-    def decorator(func):
-        @wraps(func)
-        def wrapper(*args, **kwargs):
-            attempts = 0
-            while attempts < max_retries:
-                try:
-                    return func(*args, **kwargs)
-                except (requests.exceptions.RequestException, ConnectionError) as e:
-                    attempts += 1
-                    if attempts >= max_retries:
-                        raise e
-                    time.sleep(delay)
-            return None
-        return wrapper
-    return decorator
+def move_and_click(x: int, y: int, duration: float = 0.1) -> None:
+    """Move mouse to coordinates and perform a click."""
+    pyautogui.moveTo(x, y, duration=duration)
+    pyautogui.click()
 
-@retry_operation(max_retries=3, delay=1)
-def fetch_remote_config(url):
-    """Fetches configuration data with built-in retry logic."""
-    response = requests.get(url, timeout=5)
-    response.raise_for_status()
-    return response.json()
+def randomized_delay(min_sec: float, max_sec: float) -> None:
+    """Pause execution for a random duration to mimic human behavior."""
+    delay = random.uniform(min_sec, max_sec)
+    time.sleep(delay)
 
-def process_remote_task(url):
-    """Wrapper to process remote configuration data."""
-    try:
-        data = fetch_remote_config(url)
-        return data
-    except Exception as e:
-        print(f"Task processing failed after retries: {e}")
-        return None
+def get_screen_center() -> Tuple[int, int]:
+    """Calculate the center point of the primary display."""
+    width, height = pyautogui.size()
+    return width // 2, height // 2
+
+def perform_drag(start: Tuple[int, int], end: Tuple[int, int], speed: float = 0.5) -> None:
+    """Execute a drag operation between two points."""
+    pyautogui.moveTo(start[0], start[1])
+    pyautogui.dragTo(end[0], end[1], duration=speed)
+
+def safety_check(x: int, y: int, screen_width: int, screen_height: int) -> bool:
+    """Validate if the target coordinates are within screen bounds."""
+    return 0 <= x <= screen_width and 0 <= y <= screen_height
