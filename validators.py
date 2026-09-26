@@ -1,28 +1,35 @@
-import logging
+import re
+from typing import Dict, Any, Optional
 
-def validate_click_settings(interval, duration):
-    """Ensures input values meet functional constraints."""
-    try:
-        if not isinstance(interval, (int, float)) or interval < 0.01:
-            raise ValueError(f"Invalid interval: {interval}. Must be >= 0.01")
-            
-        if not isinstance(duration, (int, float)) or duration < 0:
-            raise ValueError(f"Invalid duration: {duration}. Must be non-negative")
-            
-        return True
-    except ValueError as e:
-        logging.error(f"Validation failed: {e}")
+def validate_click_config(config: Dict[str, Any]) -> bool:
+    """Validates autoclicker configuration parameters for range safety."""
+    required_keys = {"interval", "clicks", "button"}
+    if not all(k in config for k in required_keys):
         return False
 
-def sanitize_input(user_input):
-    """Cleans raw string input for processing."""
-    if isinstance(user_input, str):
-        return user_input.strip()
-    return user_input
+    if not isinstance(config["interval"], (int, float)) or config["interval"] < 0.01:
+        return False
 
-def check_bounds(x, y, max_w, max_h):
-    """Verifies coordinates are within screen dimensions."""
-    if 0 <= x <= max_w and 0 <= y <= max_h:
-        return True
-    logging.warning(f"Coordinates ({x}, {y}) out of screen bounds")
-    return False
+    if not isinstance(config["clicks"], int) or config["clicks"] < -1:
+        return False
+
+    if config["button"] not in ["left", "right", "middle"]:
+        return False
+
+    return True
+
+def sanitize_hotkey_string(hotkey: str) -> Optional[str]:
+    """Cleans and validates user-provided hotkey strings."""
+    if not isinstance(hotkey, str):
+        return None
+
+    clean_key = hotkey.strip().lower()
+    if re.match(r"^[a-z0-9+]{1,15}$", clean_key):
+        return clean_key
+    
+    return None
+
+def check_coordinate_bounds(x: int, y: int, screen_size: tuple) -> bool:
+    """Verifies mouse coordinates are within current display bounds."""
+    width, height = screen_size
+    return 0 <= x <= width and 0 <= y <= height
