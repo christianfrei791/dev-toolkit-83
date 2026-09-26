@@ -1,17 +1,17 @@
 # dev-toolkit-83
 
-`dev-toolkit-83` is a high-performance Python-based autoclicker designed for precision, speed, and low CPU overhead. It provides a lightweight solution for automating repetitive mouse tasks with customizable intervals and hotkey controls.
+`dev-toolkit-83` is a high-performance, Python-based automation utility designed for rapid execution of repetitive mouse events. It provides developers and power users with a lightweight, low-latency framework for custom click automation.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-## Features
+### Features
 
-*   **Low-Latency Execution:** Built using `pynput` for near-instantaneous event simulation.
-*   **Dynamic Intervals:** Support for custom millisecond delays between clicks to mimic human behavior.
-*   **Hotkey Integration:** Global listener setup to start or stop the automation sequence at any time without window focus.
-*   **Multi-Button Support:** Ability to toggle between left, middle, and right mouse button automation.
+*   **Precision Timing:** Utilizes sub-millisecond thread scheduling for consistent Click-Per-Second (CPS) rates.
+*   **Dynamic Input Mapping:** Supports multi-button binding and variable delay intervals between clicks.
+*   **Coordinate Locking:** Allows for static target clicking or dynamic follow-the-cursor modes.
+*   **Resource Optimized:** Built with low-overhead library dependencies to minimize CPU impact during background operation.
 
-## Installation
+### Installation
 
 Ensure you have Python 3.8+ installed. Clone the repository and install the required dependencies:
 
@@ -21,20 +21,22 @@ cd dev-toolkit-83
 pip install -r requirements.txt
 ```
 
-## Usage
+### Usage
 
-You can launch the clicker directly via the terminal. By default, the script is configured to trigger on the F6 key and stop on F7.
+To start the autoclicker with a default configuration (10 clicks per second), execute the following command in your terminal:
 
 ```bash
-# Basic execution with default settings
-python main.py --interval 0.5 --button left
-
-# Execution with custom hotkeys
-python main.py --start-key f9 --stop-key f10
+python main.py --cps 10
 ```
 
-### Configuration
-Adjust the `config.json` file in the root directory to permanently save your preferred click patterns, coordinate locking, and delay randomization settings.
+For advanced usage, you can define a custom target coordinate and toggle key:
 
-## Safety & Disclaimer
-*This tool is intended for educational purposes and productivity automation. Please ensure you are in compliance with the Terms of Service of any application where you utilize this tool.*
+```bash
+# Set specific location (x, y) and activate with 'f6'
+python main.py --x 500 --y 500 --key f6 --cps 25
+```
+
+Press `Ctrl+C` in the terminal to terminate the process safely.
+
+### Disclaimer
+This tool is intended for personal automation and testing purposes only. Ensure compliance with the Terms of Service of any application where this tool is deployed.
