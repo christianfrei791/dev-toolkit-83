@@ -1,35 +1,22 @@
 import re
-from typing import Dict, Any, Optional
 
-def validate_click_config(config: Dict[str, Any]) -> bool:
-    """Validates autoclicker configuration parameters for range safety."""
-    required_keys = {"interval", "clicks", "button"}
-    if not all(k in config for k in required_keys):
-        return False
+def validate_coordinates(x: int, y: int) -> bool:
+    """Ensures mouse coordinates are within non-negative bounds."""
+    return isinstance(x, int) and isinstance(y, int) and x >= 0 and y >= 0
 
-    if not isinstance(config["interval"], (int, float)) or config["interval"] < 0.01:
-        return False
+def validate_interval(interval: float) -> bool:
+    """Checks if click interval is within safe operational limits."""
+    return isinstance(interval, (int, float)) and 0.01 <= interval <= 60.0
 
-    if not isinstance(config["clicks"], int) or config["clicks"] < -1:
-        return False
+def validate_hotkey(key: str) -> bool:
+    """Verifies hotkey format for input listener compatibility."""
+    pattern = re.compile(r'^[a-zA-Z0-9]{1}$|^f[1-9]$|^f1[0-2]$')
+    return bool(pattern.match(key.lower()))
 
-    if config["button"] not in ["left", "right", "middle"]:
-        return False
+def validate_click_count(count: int) -> bool:
+    """Validates click iterations are either infinite (-1) or positive."""
+    return isinstance(count, int) and (count > 0 or count == -1)
 
-    return True
-
-def sanitize_hotkey_string(hotkey: str) -> Optional[str]:
-    """Cleans and validates user-provided hotkey strings."""
-    if not isinstance(hotkey, str):
-        return None
-
-    clean_key = hotkey.strip().lower()
-    if re.match(r"^[a-z0-9+]{1,15}$", clean_key):
-        return clean_key
-    
-    return None
-
-def check_coordinate_bounds(x: int, y: int, screen_size: tuple) -> bool:
-    """Verifies mouse coordinates are within current display bounds."""
-    width, height = screen_size
-    return 0 <= x <= width and 0 <= y <= height
+def sanitize_input(user_input: str) -> str:
+    """Trims whitespace and normalizes case for internal processing."""
+    return str(user_input).strip().lower()
