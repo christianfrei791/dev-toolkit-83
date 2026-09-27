@@ -1,39 +1,31 @@
-import logging
-import pyautogui
 import time
+import pyautogui
+from typing import Optional
 
-# Configure logger for dev-toolkit-83
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger('dev-toolkit-83')
+class ClickHandler:
+    def __init__(self, interval: float = 0.1):
+        self.interval = interval
+        self.running = False
 
-def safe_click(x, y, interval=0.1):
-    """Performs a mouse click with robust error boundary checks."""
-    try:
-        # Validate coordinates against screen resolution
-        screen_width, screen_height = pyautogui.size()
-        if not (0 <= x <= screen_width and 0 <= y <= screen_height):
-            raise ValueError(f"Coordinates ({x}, {y}) out of screen bounds")
-
-        pyautogui.moveTo(x, y)
-        pyautogui.click()
-        time.sleep(interval)
-
-    except pyautogui.FailSafeException:
-        logger.critical("Fail-safe triggered: process aborted by user")
-        raise
-    except ValueError as e:
-        logger.error(f"Invalid input parameters: {e}")
-    except Exception as e:
-        logger.error(f"Unexpected automation failure: {type(e).__name__} - {e}")
-
-def run_click_sequence(coords_list):
-    """Iterates through sequence with error recovery logic."""
-    for i, (x, y) in enumerate(coords_list):
+    def start_clicking(self, iterations: Optional[int] = None):
+        """Executes mouse click loop until stopped or iteration count reached."""
+        self.running = True
+        count = 0
         try:
-            safe_click(x, y)
-        except (TypeError, ValueError):
-            logger.warning(f"Skipping invalid coordinate at index {i}")
-            continue
-        except Exception:
-            logger.error("Critical runtime error during sequence execution")
-            break
+            while self.running:
+                pyautogui.click()
+                time.sleep(self.interval)
+                count += 1
+                if iterations and count >= iterations:
+                    break
+        except KeyboardInterrupt:
+            self.stop_clicking()
+
+    def stop_clicking(self):
+        """Interrupts the clicking loop process."""
+        self.running = False
+
+    def update_interval(self, new_interval: float):
+        """Updates click delay between operations."""
+        if new_interval > 0:
+            self.interval = new_interval
