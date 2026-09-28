@@ -1,29 +1,23 @@
 import time
-import functools
-import logging
+from typing import Tuple, Optional
 
-# Configure logger for dev-toolkit-83
-logger = logging.getLogger('dev-toolkit-83')
+def format_coordinates(x: int, y: int) -> Tuple[int, int]:
+    """Normalize coordinate inputs to ensure positive integers."""
+    return max(0, x), max(0, y)
 
-def retry_network_operation(max_attempts=3, delay=2, exceptions=(ConnectionError, TimeoutError)):
-    """
-    Decorator to implement retry logic for network-bound tasks.
-    """
-    def decorator(func):
-        @functools.wraps(func)
-        def wrapper(*args, **kwargs):
-            attempts = 0
-            while attempts < max_attempts:
-                try:
-                    return func(*args, **kwargs)
-                except exceptions as e:
-                    attempts += 1
-                    if attempts >= max_attempts:
-                        logger.error(f"Final attempt failed for {func.__name__}: {e}")
-                        raise
-                    
-                    logger.warning(f"Attempt {attempts} failed for {func.__name__}, retrying in {delay}s...")
-                    time.sleep(delay)
-            return None
-        return wrapper
-    return decorator
+def get_sleep_interval(rate: float) -> float:
+    """Convert clicks per second to interval in seconds."""
+    if rate <= 0:
+        return 1.0
+    return 1.0 / rate
+
+def validate_duration(duration: Optional[float]) -> float:
+    """Ensure the click duration is a non-negative float."""
+    if duration is None or duration < 0:
+        return 0.0
+    return float(duration)
+
+def log_click_event(x: int, y: int, timestamp: float = None) -> None:
+    """Print formatted click data to console."""
+    ts = timestamp or time.time()
+    print(f"[{ts:.4f}] Click triggered at ({x}, {y})")
