@@ -1,25 +1,36 @@
+import json
 import os
-from dataclasses import dataclass
+from typing import Dict, Any
 
-@dataclass(frozen=True)
-class AppConfig:
-    """Centralized configuration settings for dev-toolkit-83"""
-    CLICK_INTERVAL: float = 0.1
-    MOUSE_BUTTON: str = "left"
-    MAX_CLICKS: int = 1000
-    EXIT_KEY: str = "esc"
-    LOG_FILE: str = "toolkit.log"
+DEFAULT_CONFIG = {
+    "interval": 0.1,
+    "button": "left",
+    "hotkey": "f6",
+    "repeat": True
+}
 
-    @classmethod
-    def from_env(cls):
-        """Load overrides from environment variables"""
-        return cls(
-            CLICK_INTERVAL=float(os.getenv("CLICK_INTERVAL", 0.1)),
-            MOUSE_BUTTON=os.getenv("MOUSE_BUTTON", "left"),
-            MAX_CLICKS=int(os.getenv("MAX_CLICKS", 1000)),
-            EXIT_KEY=os.getenv("EXIT_KEY", "esc"),
-            LOG_FILE=os.getenv("LOG_FILE", "toolkit.log")
-        )
+def load_config(filepath: str = "config.json") -> Dict[str, Any]:
+    """
+    Loads configuration from json file or returns defaults if missing.
+    """
+    config = DEFAULT_CONFIG.copy()
+    
+    if os.path.exists(filepath):
+        try:
+            with open(filepath, "r") as f:
+                user_config = json.load(f)
+                config.update(user_config)
+        except (json.JSONDecodeError, IOError):
+            pass
+            
+    return config
 
-# Global instance for easy access across the toolkit
-settings = AppConfig.from_env()
+def save_config(config: Dict[str, Any], filepath: str = "config.json") -> None:
+    """
+    Persists current configuration to disk.
+    """
+    try:
+        with open(filepath, "w") as f:
+            json.dump(config, f, indent=4)
+    except IOError:
+        pass
