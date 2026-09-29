@@ -1,35 +1,25 @@
-import logging
+import time
 import pyautogui
-from typing import Tuple, Optional
+import random
 
-logger = logging.getLogger(__name__)
+def safe_click(x: int, y: int, interval: float = 0.1):
+    """Performs a click with a small random jitter to avoid detection."""
+    jitter_x = random.randint(-2, 2)
+    jitter_y = random.randint(-2, 2)
+    pyautogui.click(x + jitter_x, y + jitter_y)
+    time.sleep(interval)
 
-def get_safe_coordinates(x: int, y: int) -> Optional[Tuple[int, int]]:
-    """Validates coordinates against screen dimensions."""
-    try:
-        screen_width, screen_height = pyautogui.size()
-        if 0 <= x < screen_width and 0 <= y < screen_height:
-            return (x, y)
-        logger.warning(f"Coordinates ({x}, {y}) out of bounds.")
-        return None
-    except pyautogui.FailSafeException as e:
-        logger.error(f"Critical fail-safe triggered: {e}")
-        return None
-    except Exception as e:
-        logger.error(f"Unexpected error validating screen geometry: {e}")
-        return None
+def human_delay(min_ms: int = 50, max_ms: int = 200):
+    """Injects random sleep to simulate human input patterns."""
+    delay = random.uniform(min_ms / 1000.0, max_ms / 1000.0)
+    time.sleep(delay)
 
-def execute_safe_click(x: int, y: int, interval: float = 0.1) -> bool:
-    """Wraps pyautogui click with boundary and error checks."""
-    coords = get_safe_coordinates(x, y)
-    if not coords:
-        return False
+def get_screen_center():
+    """Calculates coordinates for the center of the primary display."""
+    width, height = pyautogui.size()
+    return width // 2, height // 2
 
-    try:
-        pyautogui.click(x=coords[0], y=coords[1])
-        return True
-    except pyautogui.ImageNotFoundException:
-        logger.error("Click target element not located on screen.")
-    except Exception as e:
-        logger.error(f"Execution failure during click event: {e}")
-    return False
+def validate_bounds(x: int, y: int):
+    """Ensures click coordinates are within screen dimensions."""
+    width, height = pyautogui.size()
+    return 0 <= x <= width and 0 <= y <= height
