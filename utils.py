@@ -1,23 +1,38 @@
 import time
-from typing import Tuple, Optional
+import logging
+from functools import wraps
+from typing import Callable, Any, Type, Tuple
 
-def format_coordinates(x: int, y: int) -> Tuple[int, int]:
-    """Normalize coordinate inputs to ensure positive integers."""
-    return max(0, x), max(0, y)
+logger = logging.getLogger("dev-toolkit-83.utils")
 
-def get_sleep_interval(rate: float) -> float:
-    """Convert clicks per second to interval in seconds."""
-    if rate <= 0:
-        return 1.0
-    return 1.0 / rate
-
-def validate_duration(duration: Optional[float]) -> float:
-    """Ensure the click duration is a non-negative float."""
-    if duration is None or duration < 0:
-        return 0.0
-    return float(duration)
-
-def log_click_event(x: int, y: int, timestamp: float = None) -> None:
-    """Print formatted click data to console."""
-    ts = timestamp or time.time()
-    print(f"[{ts:.4f}] Click triggered at ({x}, {y})")
+def retry_on_failure(
+    retries: int = 3,
+    backoff_in_seconds: float = 1.0,
+    exceptions: Tuple[Type[BaseException], ...] = (Exception,)
+) -> Callable:
+    """
+    Decorator to retry network or system operations with exponential backoff.
+    Useful for auto-clicker asset fetching or coordinate API synchronization.
+    """
+    def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
+        @wraps(func)
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
+            delay = backoff_in_seconds
+            for attempt in range(retries + 1):
+                try:
+                    return func(*args, **kwargs)
+                except exceptions as e:
+                    if attempt == retries:
+                        logger.error(
+                            f"Operation '{func.__name__}' failed permanently after {retries} retries. Error: {e}"
+                        )
+                        raise e
+                    
+                    logger.warning(
+                        f"Attempt {attempt + 1} failed for '{func.__name__}': {e}. "
+                        f"Retrying in {delay:.2f} seconds..."
+                    )
+                    time.sleep(delay)
+                    delay *= 2
+            return wrapper
+    return decorator
