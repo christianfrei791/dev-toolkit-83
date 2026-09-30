@@ -1,22 +1,33 @@
-from typing import Final
+import os
 
-# Configuration constants for autoclicker operations
+# Configuration constants for autoclicker
+APP_NAME = 'dev-toolkit-83'
 
-DEFAULT_INTERVAL: Final[float] = 0.1
-MAX_INTERVAL: Final[float] = 60.0
-MIN_INTERVAL: Final[float] = 0.001
+# Timing constraints in milliseconds
+MIN_INTERVAL = 10
+MAX_INTERVAL = 60000
 
-DEFAULT_BUTTON: Final[str] = 'left'
-SUPPORTED_BUTTONS: Final[tuple[str, ...]] = ('left', 'middle', 'right')
+# Coordinate constraints based on standard HD display
+MAX_X = 3840
+MAX_Y = 2160
 
-# Application metadata
-APP_NAME: Final[str] = 'dev-toolkit-83'
-VERSION: Final[str] = '1.0.2'
+# Error handling status codes
+STATUS_OK = 0
+ERR_INVALID_COORDS = 1
+ERR_INVALID_INTERVAL = 2
+ERR_PERMISSION_DENIED = 3
 
-# Hotkey configurations
-TOGGLE_KEY: Final[str] = 'f6'
-EXIT_KEY: Final[str] = 'esc'
+# Default settings for initialization
+DEFAULT_CONFIG = {
+    'interval': 100,
+    'button': 'left',
+    'coordinates': (0, 0)
+}
 
-def get_app_title() -> str:
-    """Return the formatted application title."""
-    return f"{APP_NAME} v{VERSION}"
+def validate_interval(value: int) -> bool:
+    """Ensures click interval is within safe bounds."""
+    return MIN_INTERVAL <= value <= MAX_INTERVAL
+
+def validate_coordinates(x: int, y: int) -> bool:
+    """Ensures coordinates are within reasonable screen limits."""
+    return 0 <= x <= MAX_X and 0 <= y <= MAX_Y
