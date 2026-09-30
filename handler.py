@@ -1,31 +1,37 @@
-import time
+import logging
 import pyautogui
-from typing import Optional
+import time
 
-class ClickHandler:
-    def __init__(self, interval: float = 0.1):
-        self.interval = interval
-        self.running = False
+logger = logging.getLogger(__name__)
 
-    def start_clicking(self, iterations: Optional[int] = None):
-        """Executes mouse click loop until stopped or iteration count reached."""
-        self.running = True
-        count = 0
-        try:
-            while self.running:
-                pyautogui.click()
-                time.sleep(self.interval)
-                count += 1
-                if iterations and count >= iterations:
-                    break
-        except KeyboardInterrupt:
-            self.stop_clicking()
+def safe_click(x: int, y: int, interval: float = 0.1):
+    """Performs a click with bounds checking and failure handling."""
+    try:
+        screen_width, screen_height = pyautogui.size()
 
-    def stop_clicking(self):
-        """Interrupts the clicking loop process."""
-        self.running = False
+        if not (0 <= x < screen_width and 0 <= y < screen_height):
+            raise ValueError(f"Coordinates ({x}, {y}) out of screen bounds.")
 
-    def update_interval(self, new_interval: float):
-        """Updates click delay between operations."""
-        if new_interval > 0:
-            self.interval = new_interval
+        pyautogui.moveTo(x, y)
+        pyautogui.click()
+        time.sleep(interval)
+
+    except pyautogui.FailSafeException:
+        logger.critical("Fail-safe triggered: mouse moved to corner.")
+        raise
+    except ValueError as e:
+        logger.error(f"Invalid click coordinates: {e}")
+    except Exception as e:
+        logger.exception(f"Unexpected error during click execution: {e}")
+
+def batch_click(points: list):
+    """Executes a series of clicks with basic validation."""
+    if not isinstance(points, list):
+        logger.error("Point data must be a list.")
+        return
+
+    for point in points:
+        if len(point) != 2:
+            logger.warning(f"Skipping invalid point format: {point}")
+            continue
+        safe_click(point[0], point[1])
