@@ -1,37 +1,33 @@
-import logging
-import pyautogui
 import time
+import logging
+import requests
+from functools import wraps
 
 logger = logging.getLogger(__name__)
 
-def safe_click(x: int, y: int, interval: float = 0.1):
-    """Performs a click with bounds checking and failure handling."""
-    try:
-        screen_width, screen_height = pyautogui.size()
+def with_retry(max_attempts=3, delay=2):
+    """Decorator to retry network operations on failure."""
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            attempts = 0
+            while attempts < max_attempts:
+                try:
+                    return func(*args, **kwargs)
+                except (requests.RequestException, ConnectionError) as e:
+                    attempts += 1
+                    logger.warning(f"Attempt {attempts} failed: {e}")
+                    if attempts >= max_attempts:
+                        logger.error("Max retries reached. Operation failed.")
+                        raise
+                    time.sleep(delay)
+            return None
+        return wrapper
+    return decorator
 
-        if not (0 <= x < screen_width and 0 <= y < screen_height):
-            raise ValueError(f"Coordinates ({x}, {y}) out of screen bounds.")
-
-        pyautogui.moveTo(x, y)
-        pyautogui.click()
-        time.sleep(interval)
-
-    except pyautogui.FailSafeException:
-        logger.critical("Fail-safe triggered: mouse moved to corner.")
-        raise
-    except ValueError as e:
-        logger.error(f"Invalid click coordinates: {e}")
-    except Exception as e:
-        logger.exception(f"Unexpected error during click execution: {e}")
-
-def batch_click(points: list):
-    """Executes a series of clicks with basic validation."""
-    if not isinstance(points, list):
-        logger.error("Point data must be a list.")
-        return
-
-    for point in points:
-        if len(point) != 2:
-            logger.warning(f"Skipping invalid point format: {point}")
-            continue
-        safe_click(point[0], point[1])
+@with_retry(max_attempts=3, delay=1)
+def fetch_remote_config(url):
+    """Fetches remote configuration data with retry support."""
+    response = requests.get(url, timeout=5)
+    response.raise_for_status()
+    return response.json()
