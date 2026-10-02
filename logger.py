@@ -1,33 +1,50 @@
+import os
 import logging
-import sys
-from typing import Optional
+from logging.handlers import RotatingFileHandler
 
-class Logger:
-    """Handles logging operations for dev-toolkit-83."""
+def setup_logger(
+    name: str = "autoclicker",
+    log_file: str = "autoclicker.log",
+    max_bytes: int = 1048576,  # 1 MB
+    backup_count: int = 3,
+    level: int = logging.INFO
+) -> logging.Logger:
+    """
+    Configures and returns a logger with console and rotating file handlers.
+    Prevents duplication of handlers if initialized multiple times.
+    """
+    logger = logging.getLogger(name)
+    logger.setLevel(level)
 
-    def __init__(self, name: str, level: int = logging.INFO) -> None:
-        self.logger: logging.Logger = logging.getLogger(name)
-        self.logger.setLevel(level)
-        
-        handler: logging.StreamHandler = logging.StreamHandler(sys.stdout)
-        formatter: logging.Formatter = logging.Formatter(
-            "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    if logger.handlers:
+        return logger
+
+    # Unified formatting for clean output
+    log_format = logging.Formatter(
+        fmt="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S"
+    )
+
+    # Console handler for standard run logs
+    console_handler = logging.StreamHandler()
+    console_handler.setFormatter(log_format)
+    logger.addHandler(console_handler)
+
+    # Rotating file handler to prevent unrestricted disk usage
+    try:
+        log_dir = os.path.dirname(log_file)
+        if log_dir and not os.path.exists(log_dir):
+            os.makedirs(log_dir, exist_ok=True)
+
+        file_handler = RotatingFileHandler(
+            log_file,
+            maxBytes=max_bytes,
+            backupCount=backup_count,
+            encoding="utf-8"
         )
-        handler.setFormatter(formatter)
-        self.logger.addHandler(handler)
+        file_handler.setFormatter(log_format)
+        logger.addHandler(file_handler)
+    except (OSError, PermissionError) as err:
+        logger.warning(f"File logging disabled due to write error: {err}")
 
-    def info(self, message: str) -> None:
-        """Logs informational messages to stdout."""
-        self.logger.info(message)
-
-    def error(self, message: str, exc_info: Optional[bool] = False) -> None:
-        """Logs error messages to stdout."""
-        self.logger.error(message, exc_info=exc_info)
-
-    def debug(self, message: str) -> None:
-        """Logs debug-level diagnostics."""
-        self.logger.debug(message)
-
-def get_logger(name: str) -> Logger:
-    """Factory function to retrieve a configured logger."""
-    return Logger(name)
+    return logger
