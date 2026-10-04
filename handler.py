@@ -1,33 +1,44 @@
 import time
-import logging
-import requests
-from functools import wraps
+import threading
+import pyautogui
 
-logger = logging.getLogger(__name__)
+class ClickHandler:
+    """High-performance execution loop for click events."""
+    
+    def __init__(self, interval: float):
+        self.interval = interval
+        self._running = False
+        self._lock = threading.Lock()
 
-def with_retry(max_attempts=3, delay=2):
-    """Decorator to retry network operations on failure."""
-    def decorator(func):
-        @wraps(func)
-        def wrapper(*args, **kwargs):
-            attempts = 0
-            while attempts < max_attempts:
-                try:
-                    return func(*args, **kwargs)
-                except (requests.RequestException, ConnectionError) as e:
-                    attempts += 1
-                    logger.warning(f"Attempt {attempts} failed: {e}")
-                    if attempts >= max_attempts:
-                        logger.error("Max retries reached. Operation failed.")
-                        raise
-                    time.sleep(delay)
-            return None
-        return wrapper
-    return decorator
+    def start_clicking(self) -> None:
+        """Runs the click loop in a dedicated thread to prevent UI blocking."""
+        with self._lock:
+            if self._running:
+                return
+            self._running = True
 
-@with_retry(max_attempts=3, delay=1)
-def fetch_remote_config(url):
-    """Fetches remote configuration data with retry support."""
-    response = requests.get(url, timeout=5)
-    response.raise_for_status()
-    return response.json()
+        thread = threading.Thread(target=self._run_loop, daemon=True)
+        thread.start()
+
+    def stop_clicking(self) -> None:
+        """Signals the loop to terminate."""
+        with self._lock:
+            self._running = False
+
+    def _run_loop(self) -> None:
+        """Internal optimized click cycle execution."""
+        pyautogui.PAUSE = 0.0
+        
+        while True:
+            with self._lock:
+                if not self._running:
+                    break
+            
+            pyautogui.click()
+            
+            if self.interval > 0:
+                time.sleep(self.interval)
+
+    def update_interval(self, new_interval: float) -> None:
+        """Dynamic update of cycle duration."""
+        self.interval = max(0.0, new_interval)
