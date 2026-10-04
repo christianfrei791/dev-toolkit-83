@@ -1,22 +1,32 @@
-import re
+import logging
 
-def validate_coordinates(x: int, y: int) -> bool:
-    """Ensures mouse coordinates are within non-negative bounds."""
-    return isinstance(x, int) and isinstance(y, int) and x >= 0 and y >= 0
+logger = logging.getLogger(__name__)
 
-def validate_interval(interval: float) -> bool:
-    """Checks if click interval is within safe operational limits."""
-    return isinstance(interval, (int, float)) and 0.01 <= interval <= 60.0
+def validate_click_params(interval: float, duration: int) -> bool:
+    """Validates input parameters for the autoclicker loop."""
+    if not isinstance(interval, (int, float)) or interval < 0.01:
+        logger.error(f"Invalid interval: {interval}. Must be >= 0.01.")
+        return False
 
-def validate_hotkey(key: str) -> bool:
-    """Verifies hotkey format for input listener compatibility."""
-    pattern = re.compile(r'^[a-zA-Z0-9]{1}$|^f[1-9]$|^f1[0-2]$')
-    return bool(pattern.match(key.lower()))
+    if not isinstance(duration, int) or duration < 0:
+        logger.error(f"Invalid duration: {duration}. Must be a positive integer.")
+        return False
 
-def validate_click_count(count: int) -> bool:
-    """Validates click iterations are either infinite (-1) or positive."""
-    return isinstance(count, int) and (count > 0 or count == -1)
+    return True
 
-def sanitize_input(user_input: str) -> str:
-    """Trims whitespace and normalizes case for internal processing."""
-    return str(user_input).strip().lower()
+def validate_coordinates(x: int, y: int, screen_width: int, screen_height: int) -> bool:
+    """Checks if coordinates fall within display bounds."""
+    if 0 <= x <= screen_width and 0 <= y <= screen_height:
+        return True
+    
+    logger.warning(f"Coordinates ({x}, {y}) out of screen bounds.")
+    return False
+
+def sanitize_input(user_input: str) -> float:
+    """Attempts to convert raw input to a float safely."""
+    try:
+        value = float(user_input)
+        return max(0.01, value)
+    except (ValueError, TypeError):
+        logger.error(f"Input conversion failed for value: {user_input}")
+        return 0.1
