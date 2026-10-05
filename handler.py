@@ -1,44 +1,37 @@
 import time
 import threading
-import pyautogui
+from typing import Callable
 
 class ClickHandler:
-    """High-performance execution loop for click events."""
-    
-    def __init__(self, interval: float):
+    """High-frequency execution handler with batching."""
+    def __init__(self, click_func: Callable[[], None], interval: float = 0.01):
+        self.click_func = click_func
         self.interval = interval
-        self._running = False
-        self._lock = threading.Lock()
+        self.running = False
+        self._thread = None
 
-    def start_clicking(self) -> None:
-        """Runs the click loop in a dedicated thread to prevent UI blocking."""
-        with self._lock:
-            if self._running:
-                return
-            self._running = True
-
-        thread = threading.Thread(target=self._run_loop, daemon=True)
-        thread.start()
-
-    def stop_clicking(self) -> None:
-        """Signals the loop to terminate."""
-        with self._lock:
-            self._running = False
-
-    def _run_loop(self) -> None:
-        """Internal optimized click cycle execution."""
-        pyautogui.PAUSE = 0.0
-        
-        while True:
-            with self._lock:
-                if not self._running:
-                    break
+    def _execute_loop(self) -> None:
+        """Optimized execution loop using high-resolution sleep."""
+        next_time = time.perf_counter()
+        while self.running:
+            self.click_func()
+            next_time += self.interval
+            sleep_time = next_time - time.perf_counter()
             
-            pyautogui.click()
-            
-            if self.interval > 0:
-                time.sleep(self.interval)
+            # Prevent busy-waiting while maintaining precision
+            if sleep_time > 0:
+                time.sleep(sleep_time)
+            else:
+                next_time = time.perf_counter()
 
-    def update_interval(self, new_interval: float) -> None:
-        """Dynamic update of cycle duration."""
-        self.interval = max(0.0, new_interval)
+    def start(self) -> None:
+        if not self.running:
+            self.running = True
+            self._thread = threading.Thread(target=self._execute_loop, daemon=True)
+            self._thread.start()
+
+    def stop(self) -> None:
+        self.running = False
+        if self._thread:
+            self._thread.join()
+            self._thread = None
