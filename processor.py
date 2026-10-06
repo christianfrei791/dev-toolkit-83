@@ -1,28 +1,46 @@
-import pyautogui
-import time
-import random
-from typing import Tuple
+import json
+import os
+from typing import Dict, Any
 
-def move_and_click(x: int, y: int, duration: float = 0.1) -> None:
-    """Move mouse to coordinates and perform a click."""
-    pyautogui.moveTo(x, y, duration=duration)
-    pyautogui.click()
+class ClickConfigProcessor:
+    """Handles serialization and validation for clicker configurations."""
 
-def randomized_delay(min_sec: float, max_sec: float) -> None:
-    """Pause execution for a random duration to mimic human behavior."""
-    delay = random.uniform(min_sec, max_sec)
-    time.sleep(delay)
+    def __init__(self, storage_path: str = "config.json"):
+        self.storage_path = storage_path
 
-def get_screen_center() -> Tuple[int, int]:
-    """Calculate the center point of the primary display."""
-    width, height = pyautogui.size()
-    return width // 2, height // 2
+    def save_config(self, data: Dict[str, Any]) -> bool:
+        """Persists current click parameters to disk."""
+        try:
+            with open(self.storage_path, 'w') as f:
+                json.dump(data, f, indent=4)
+            return True
+        except (IOError, TypeError):
+            return False
 
-def perform_drag(start: Tuple[int, int], end: Tuple[int, int], speed: float = 0.5) -> None:
-    """Execute a drag operation between two points."""
-    pyautogui.moveTo(start[0], start[1])
-    pyautogui.dragTo(end[0], end[1], duration=speed)
+    def load_config(self) -> Dict[str, Any]:
+        """Retrieves stored click parameters or returns defaults."""
+        if not os.path.exists(self.storage_path):
+            return self._get_defaults()
+        
+        try:
+            with open(self.storage_path, 'r') as f:
+                return json.load(f)
+        except json.JSONDecodeError:
+            return self._get_defaults()
 
-def safety_check(x: int, y: int, screen_width: int, screen_height: int) -> bool:
-    """Validate if the target coordinates are within screen bounds."""
-    return 0 <= x <= screen_width and 0 <= y <= screen_height
+    def _get_defaults(self) -> Dict[str, Any]:
+        """Default clicker values for initialization."""
+        return {
+            "interval": 0.1,
+            "button": "left",
+            "enabled": False,
+            "hotkey": "f6"
+        }
+
+    def validate_data(self, data: Dict[str, Any]) -> bool:
+        """Sanity check for configuration parameters."""
+        if "interval" not in data or not isinstance(data["interval"], (int, float)):
+            return False
+        if data["interval"] < 0.001:
+            return False
+        return True
