@@ -1,44 +1,37 @@
 import logging
+import sys
 import os
-from logging.handlers import RotatingFileHandler
 
-def setup_logger(name: str = "autoclicker", log_file: str = "logs/autoclicker.log") -> logging.Logger:
-    """
-    Configures and returns a logger with both console and rotating file handlers.
-    """
-    logger = logging.getLogger(name)
-    logger.setLevel(logging.DEBUG)
+class Logger:
+    """Centralized logging for dev-toolkit-83."""
+    def __init__(self, name: str, log_file: str = "app.log"):
+        self.logger = logging.getLogger(name)
+        self.logger.setLevel(logging.INFO)
+        
+        try:
+            formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+            
+            # File handler with error checking for directory permissions
+            file_handler = logging.FileHandler(log_file)
+            file_handler.setFormatter(formatter)
+            self.logger.addHandler(file_handler)
+            
+            # Console output
+            console_handler = logging.StreamHandler(sys.stdout)
+            console_handler.setFormatter(formatter)
+            self.logger.addHandler(console_handler)
+            
+        except (OSError, PermissionError) as e:
+            print(f"Critical: Failed to initialize log file: {e}")
+            sys.exit(1)
 
-    # Prevent duplicate handlers if the logger is already configured
-    if logger.handlers:
-        return logger
+    def log_error(self, message: str, exc_info: bool = False):
+        """Standardized error output for clicker operations."""
+        if not message:
+            return
+        self.logger.error(message, exc_info=exc_info)
 
-    # Format structure for log entries
-    log_format = logging.Formatter(
-        fmt="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S"
-    )
-
-    # Console handler for real-time terminal output (INFO level)
-    console_handler = logging.StreamHandler()
-    console_handler.setLevel(logging.INFO)
-    console_handler.setFormatter(log_format)
-    logger.addHandler(console_handler)
-
-    # Ensure target directory for log file exists
-    log_dir = os.path.dirname(log_file)
-    if log_dir and not os.path.exists(log_dir):
-        os.makedirs(log_dir, exist_ok=True)
-
-    # Rotating file handler (DEBUG level, rotates at 2MB, keeps last 3 logs)
-    file_handler = RotatingFileHandler(
-        log_file,
-        maxBytes=2 * 1024 * 1024,
-        backupCount=3,
-        encoding="utf-8"
-    )
-    file_handler.setLevel(logging.DEBUG)
-    file_handler.setFormatter(log_format)
-    logger.addHandler(file_handler)
-
-    return logger
+    def log_info(self, message: str):
+        """Standardized info output for system status."""
+        if message:
+            self.logger.info(message)
