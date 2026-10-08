@@ -1,19 +1,18 @@
-# dev-toolkit-83
-
-`dev-toolkit-83` is a high-performance, Python-based automation utility designed for rapid execution of repetitive mouse events. It provides developers and power users with a lightweight, low-latency framework for custom click automation.
-
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-### Features
+# dev-toolkit-83
 
-*   **Precision Timing:** Utilizes sub-millisecond thread scheduling for consistent Click-Per-Second (CPS) rates.
-*   **Dynamic Input Mapping:** Supports multi-button binding and variable delay intervals between clicks.
-*   **Coordinate Locking:** Allows for static target clicking or dynamic follow-the-cursor modes.
-*   **Resource Optimized:** Built with low-overhead library dependencies to minimize CPU impact during background operation.
+`dev-toolkit-83` is a high-performance Python-based autoclicker designed for developers testing UI responsiveness and automating repetitive desktop workflows. Built with safety and speed in mind, it provides microsecond-precision clicking alongside instant global hotkeys to prevent runaway input loops.
 
-### Installation
+## Features
 
-Ensure you have Python 3.8+ installed. Clone the repository and install the required dependencies:
+* **Precision Interval Control:** Configure click delays down to 1 millisecond with optional randomized jitter to simulate human interaction.
+* **Global Hotkey Listeners:** Instantly start, pause, or abort clicking loops using customizable system-wide keyboard shortcuts (Default: `F8` to toggle, `F12` to stop).
+* **Targeted Execution:** Support for left, right, and middle mouse buttons bound to either fixed X/Y screen coordinates or the current cursor position.
+
+## Installation
+
+Clone the repository and install the required dependencies:
 
 ```bash
 git clone https://github.com/Developer/dev-toolkit-83.git
@@ -21,22 +20,13 @@ cd dev-toolkit-83
 pip install -r requirements.txt
 ```
 
-### Usage
+*Note: This package requires Python 3.8+ and utilizes the `pynput` library for cross-platform input simulation.*
 
-To start the autoclicker with a default configuration (10 clicks per second), execute the following command in your terminal:
+## Quick Start
 
-```bash
-python main.py --cps 10
-```
+You can run the autoclicker programmatically with the following script:
 
-For advanced usage, you can define a custom target coordinate and toggle key:
+```python
+from toolkit import SafeClicker
 
-```bash
-# Set specific location (x, y) and activate with 'f6'
-python main.py --x 500 --y 500 --key f6 --cps 25
-```
-
-Press `Ctrl+C` in the terminal to terminate the process safely.
-
-### Disclaimer
-This tool is intended for personal automation and testing purposes only. Ensure compliance with the Terms of Service of any application where this tool is deployed.
+# Initialize clicker with a 0.05-
