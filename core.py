@@ -1,41 +1,29 @@
 import pyautogui
 import time
-import threading
+import random
 
-class AutoClicker:
-    """Core autoclicker engine for dev-toolkit-83."""
-    def __init__(self, interval=0.1, button='left'):
-        self.interval = interval
-        self.button = button
-        self.running = False
-        self._thread = None
+def safe_click(x, y, interval=0.1):
+    """Performs a mouse click with random jitter to avoid detection."""
+    jitter_x = random.randint(-2, 2)
+    jitter_y = random.randint(-2, 2)
+    pyautogui.click(x + jitter_x, y + jitter_y)
+    time.sleep(interval)
 
-    def _click_loop(self):
-        while self.running:
-            pyautogui.click(button=self.button)
-            time.sleep(self.interval)
+def perform_sequence(coords, delay=1.0):
+    """Iterates through a list of coordinate tuples and clicks them."""
+    for x, y in coords:
+        safe_click(x, y)
+        time.sleep(delay)
 
-    def start(self):
-        if not self.running:
-            self.running = True
-            self._thread = threading.Thread(target=self._click_loop, daemon=True)
-            self._thread.start()
+def smart_wait(min_sec, max_sec):
+    """Pauses execution for a randomized duration."""
+    duration = random.uniform(min_sec, max_sec)
+    time.sleep(duration)
 
-    def stop(self):
-        self.running = False
-        if self._thread:
-            self._thread.join()
+def screen_resolution_check():
+    """Validates screen boundaries for click safety."""
+    return pyautogui.size()
 
-    def set_interval(self, seconds):
-        self.interval = max(0.01, seconds)
-
-if __name__ == '__main__':
-    clicker = AutoClicker(interval=0.5)
-    try:
-        print('Starting clicker... Press Ctrl+C to stop.')
-        clicker.start()
-        while True:
-            time.sleep(1)
-    except KeyboardInterrupt:
-        clicker.stop()
-        print('\nStopped.')
+def emergency_stop():
+    """Force quit logic triggered by mouse movement to corner."""
+    pyautogui.FAILSAFE = True
