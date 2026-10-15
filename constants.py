@@ -1,37 +1,34 @@
 import platform
 
 # Operating system identification
-IS_WINDOWS = platform.system() == 'Windows'
-IS_LINUX = platform.system() == 'Linux'
-IS_DARWIN = platform.system() == 'Darwin'
+OS_TYPE = platform.system()
 
-# Default autoclicker configuration parameters
+# Default click interval constraints in seconds
+MIN_INTERVAL = 0.01
+MAX_INTERVAL = 60.0
 DEFAULT_INTERVAL = 0.1
-DEFAULT_BUTTON = 'left'
-DEFAULT_HOTKEY = 'f8'
 
-# Human emulation constraints
-MIN_JITTER = 0.005
-MAX_JITTER = 0.05
+# Mouse button identifiers
+LEFT_BUTTON = 'left'
+RIGHT_BUTTON = 'right'
+MIDDLE_BUTTON = 'middle'
 
-# Mouse event codes
-MOUSE_LEFT = 1
-MOUSE_RIGHT = 2
-MOUSE_MIDDLE = 4
+# Supported click modes
+MODE_SINGLE = 'single'
+MODE_DOUBLE = 'double'
 
-# UI status strings
-STATUS_IDLE = 'idle'
-STATUS_RUNNING = 'running'
-STATUS_ERROR = 'error'
+# Configuration file paths
+CONFIG_FILE = 'settings.json'
+LOG_FILE = 'dev-toolkit.log'
 
-# Supported coordinate modes
-MODE_ABSOLUTE = 'absolute'
-MODE_RELATIVE = 'relative'
+# Keyboard control sequence
+STOP_KEY = 'f9'
+START_KEY = 'f8'
 
-# Error messages for validation
-ERR_INVALID_COORDS = 'coordinate values must be non-negative integers'
-ERR_INVALID_INTERVAL = 'interval must be a positive float value'
+# Buffer settings for input processing
+MAX_QUEUE_SIZE = 100
+INPUT_TIMEOUT = 0.5
 
 # Application metadata
 APP_NAME = 'dev-toolkit-83'
-APP_VERSION = '1.0.0'
+VERSION = '1.0.0'
