@@ -1,30 +1,35 @@
 import time
+import functools
 import logging
-from typing import Optional
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-logger = logging.getLogger('dev-toolkit-83')
+logger = logging.getLogger(__name__)
 
-class ClickerUtils:
-    """Utility methods for coordinate processing and timing."""
+def retry_operation(retries=3, delay=2, backoff=2):
+    """Decorator for retrying network operations with exponential backoff."""
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            attempt = 0
+            current_delay = delay
+            while attempt < retries:
+                try:
+                    return func(*args, **kwargs)
+                except (ConnectionError, TimeoutError) as e:
+                    attempt += 1
+                    if attempt == retries:
+                        logger.error(f"Final attempt failed: {e}")
+                        raise
+                    logger.warning(f"Retry {attempt}/{retries} after error: {e}")
+                    time.sleep(current_delay)
+                    current_delay *= backoff
+            return None
+        return wrapper
+    return decorator
 
-    @staticmethod
-    def sleep_random(min_ms: int, max_ms: int) -> None:
-        """Pauses execution for a randomized duration."""
-        import random
-        delay = random.uniform(min_ms, max_ms) / 1000.0
-        time.sleep(delay)
-
-    @staticmethod
-    def validate_coords(x: int, y: int) -> bool:
-        """Ensures screen coordinates are within reasonable bounds."""
-        return 0 <= x <= 10000 and 0 <= y <= 10000
-
-    @staticmethod
-    def get_timestamp() -> str:
-        """Formatted string for logging purposes."""
-        return time.strftime("%Y-%m-%d %H:%M:%S")
-
-def setup_logger(name: str) -> logging.Logger:
-    """Initialization of module-specific logging instances."""
-    return logging.getLogger(name)
+@retry_operation(retries=3, delay=1)
+def fetch_remote_config(url):
+    """Example network call for dev-toolkit-83 configuration."""
+    # Simulate network operations for the autoclicker
+    import urllib.request
+    with urllib.request.urlopen(url, timeout=5) as response:
+        return response.read().decode('utf-8')
