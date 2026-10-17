@@ -1,48 +1,31 @@
 import time
-import logging
-from typing import Optional
+import pyautogui
+from typing import Optional, Dict
 
-# Configure logging for dev-toolkit-83
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger('dev-toolkit-83')
+class ClickProcessor:
+    """Handles execution of automated clicking sequences."""
 
-def perform_click(x: int, y: int, interval: float) -> bool:
-    """
-    Executes a click event with input validation and error handling.
-    """
-    try:
-        if not isinstance(x, (int, float)) or not isinstance(y, (int, float)):
-            raise ValueError(f"Invalid coordinates: ({x}, {y})")
-        
-        if interval < 0:
-            raise ValueError(f"Negative interval: {interval}")
+    def __init__(self, interval: float = 0.1, button: str = 'left') -> None:
+        self.interval: float = interval
+        self.button: str = button
 
-        # Simulated clicking logic
-        logger.info(f"Clicking at {x}, {y} after {interval}s")
-        time.sleep(interval)
-        return True
+    def execute_click(self, x: int, y: int, duration: float = 0.0) -> None:
+        """Performs a mouse click at coordinates with optional delay."""
+        if duration > 0:
+            time.sleep(duration)
+        pyautogui.click(x=x, y=y, button=self.button)
 
-    except ValueError as e:
-        logger.error(f"Input validation error: {e}")
-        return False
-    except Exception as e:
-        logger.critical(f"Unexpected system failure: {e}")
-        return False
+    def run_sequence(self, coordinates: list[tuple[int, int]], iterations: int = 1) -> None:
+        """Executes a list of coordinate clicks for specified iterations."""
+        for _ in range(iterations):
+            for x, y in coordinates:
+                self.execute_click(x, y)
+                time.sleep(self.interval)
 
-def execute_macro(actions: list) -> None:
-    """
-    Batch processing for clicking sequences with boundary checks.
-    """
-    if not actions:
-        logger.warning("Empty action list provided")
-        return
-
-    for action in actions:
-        if not all(k in action for k in ('x', 'y', 'delay')):
-            logger.error("Malformed action structure encountered")
-            continue
-        
-        success = perform_click(action['x'], action['y'], action['delay'])
-        if not success:
-            logger.error("Aborting macro execution due to critical failure")
-            break
+    def get_status(self) -> Dict[str, str]:
+        """Returns the current configuration of the processor."""
+        return {
+            "interval": str(self.interval),
+            "button": self.button,
+            "active": "true"
+        }
