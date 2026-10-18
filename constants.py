@@ -1,34 +1,24 @@
-import platform
+from typing import Final
 
-# Operating system identification
-OS_TYPE = platform.system()
-
-# Default click interval constraints in seconds
-MIN_INTERVAL = 0.01
-MAX_INTERVAL = 60.0
-DEFAULT_INTERVAL = 0.1
+# Configuration constants for autoclicker operations
+DEFAULT_INTERVAL: Final[float] = 0.1
+MAX_CLICK_RATE: Final[int] = 1000
 
 # Mouse button identifiers
-LEFT_BUTTON = 'left'
-RIGHT_BUTTON = 'right'
-MIDDLE_BUTTON = 'middle'
+BUTTON_LEFT: Final[str] = "left"
+BUTTON_RIGHT: Final[str] = "right"
+BUTTON_MIDDLE: Final[str] = "middle"
 
-# Supported click modes
-MODE_SINGLE = 'single'
-MODE_DOUBLE = 'double'
+# Application settings
+APP_NAME: Final[str] = "dev-toolkit-83"
+VERSION: Final[str] = "1.0.0"
 
-# Configuration file paths
-CONFIG_FILE = 'settings.json'
-LOG_FILE = 'dev-toolkit.log'
+def get_supported_buttons() -> list[str]:
+    """Return a list of supported mouse buttons for the autoclicker."""
+    return [BUTTON_LEFT, BUTTON_RIGHT, BUTTON_MIDDLE]
 
-# Keyboard control sequence
-STOP_KEY = 'f9'
-START_KEY = 'f8'
-
-# Buffer settings for input processing
-MAX_QUEUE_SIZE = 100
-INPUT_TIMEOUT = 0.5
-
-# Application metadata
-APP_NAME = 'dev-toolkit-83'
-VERSION = '1.0.0'
+class ClickType:
+    """Container for click event types."""
+    SINGLE: Final[str] = "single"
+    DOUBLE: Final[str] = "double"
+    HOLD: Final[str] = "hold"
