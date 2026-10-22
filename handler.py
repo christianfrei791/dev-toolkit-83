@@ -1,33 +1,40 @@
-import json
-import os
-from typing import Dict, Any
+import time
+import pyautogui
+from typing import Tuple, Optional
 
-def load_clicker_config(filepath: str) -> Dict[str, Any]:
-    """Loads autoclicker parameters from a JSON file."""
-    if not os.path.exists(filepath):
-        return {"interval": 0.1, "button": "left", "repeats": 1}
-    
-    with open(filepath, 'r') as f:
-        try:
-            return json.load(f)
-        except json.JSONDecodeError:
-            return {}
+class ClickHandler:
+    """Handles mouse interaction events for the autoclicker."""
 
-def save_clicker_config(filepath: str, data: Dict[str, Any]) -> bool:
-    """Persists autoclicker settings to disk safely."""
-    try:
-        with open(filepath, 'w') as f:
-            json.dump(data, f, indent=4)
-        return True
-    except IOError:
-        return False
+    def __init__(self, interval: float = 0.1) -> None:
+        """Initializes the click handler with a defined interval."""
+        self.interval: float = interval
 
-def validate_click_params(data: Dict[str, Any]) -> bool:
-    """Checks validity of click rate and count."""
-    interval = data.get("interval", 0)
-    repeats = data.get("repeats", 0)
-    return isinstance(interval, (int, float)) and interval > 0 and isinstance(repeats, int)
+    def perform_click(self, coordinates: Optional[Tuple[int, int]] = None) -> None:
+        """
+        Executes a mouse click at specific coordinates or current location.
+        
+        :param coordinates: Tuple of (x, y) pixels
+        """
+        if coordinates:
+            pyautogui.click(x=coordinates[0], y=coordinates[1])
+        else:
+            pyautogui.click()
 
-def sanitize_coords(coords: tuple) -> tuple:
-    """Ensures coordinates stay within non-negative bounds."""
-    return (max(0, coords[0]), max(0, coords[1]))
+    def run_sequence(self, iterations: int, coords: Optional[Tuple[int, int]] = None) -> None:
+        """
+        Executes a loop of clicks with a set delay.
+        
+        :param iterations: Number of times to click
+        :param coords: Optional target location
+        """
+        for _ in range(iterations):
+            self.perform_click(coords)
+            time.sleep(self.interval)
+
+    def update_speed(self, new_interval: float) -> None:
+        """
+        Updates the delay between clicks.
+        
+        :param new_interval: Delay in seconds
+        """
+        self.interval = max(0.01, new_interval)
