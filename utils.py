@@ -1,26 +1,44 @@
 import time
-import functools
-import logging
+import urllib.error
+import urllib.request
+from typing import Callable, Any
 
-logger = logging.getLogger('dev-toolkit-83')
 
-def retry_network_operation(max_retries=3, delay=1.5, backoff=2):
-    """Decorator to retry network operations with exponential backoff."""
-    def decorator(func):
-        @functools.wraps(func)
-        def wrapper(*args, **kwargs):
-            current_delay = delay
-            for attempt in range(max_retries):
+def retry_network_op(
+    max_retries: int = 3,
+    initial_delay: float = 1.0,
+    backoff_factor: float = 2.0,
+    exceptions: tuple = (urllib.error.URLError, TimeoutError, ConnectionError)
+) -> Callable:
+    """
+    Decorator that retries network operations with exponential backoff.
+    Useful for remote script syncing and status reporting in autoclicker ops.
+    """
+    def decorator(func: Callable) -> Callable:
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
+            delay = initial_delay
+            for attempt in range(1, max_retries + 1):
                 try:
                     return func(*args, **kwargs)
-                except (ConnectionError, TimeoutError) as e:
-                    if attempt == max_retries - 1:
-                        logger.error(f"Max retries reached for {func.__name__}")
-                        raise e
-                    
-                    logger.warning(f"Retry {attempt + 1}/{max_retries} for {func.__name__} after error: {e}")
-                    time.sleep(current_delay)
-                    current_delay *= backoff
+                except exceptions as err:
+                    if attempt == max_retries:
+                        raise err
+                    time.sleep(delay)
+                    delay *= backoff_factor
             return None
         return wrapper
     return decorator
+
+
+def fetch_remote_config(url: str, timeout: int = 5) -> str:
+    """Fetch remote automation profile or config payload with retry protection."""
+    @retry_network_op(max_retries=3, initial_delay=0.5, backoff_factor=2.0)
+    def _execute_request():
+        req = urllib.request.Request(
+            url,
+            headers={"User-Agent": "DevToolkit-AutoClicker/1.0"}
+        )
+        with urllib.request.urlopen(req, timeout=timeout) as response:
+            return response.read().decode("utf-8")
+
+    return _execute_request()
