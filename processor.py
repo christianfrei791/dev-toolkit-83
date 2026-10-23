@@ -1,30 +1,37 @@
 import time
-import pyautogui
-from typing import Tuple
+import logging
 
-class ClickProcessor:
-    """Handles core automation logic for dev-toolkit-83."""
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger('dev-toolkit-83')
 
-    def __init__(self, interval: float = 0.1):
-        self.interval = interval
-        self.running = False
+def validate_inputs(interval, duration):
+    """Ensures click parameters are within operational safety bounds."""
+    if not isinstance(interval, (int, float)) or not isinstance(duration, (int, float)):
+        raise ValueError('interval and duration must be numeric')
+    if interval < 0.01:
+        raise ValueError('interval too low, risk of system instability')
+    if duration < 0:
+        raise ValueError('duration cannot be negative')
+    return True
 
-    def perform_click(self, x: int, y: int) -> None:
-        """Executes mouse click at specified coordinates."""
-        pyautogui.click(x=x, y=y)
+def run_processor(interval: float, duration: float):
+    """Main processing loop for autoclicker execution."""
+    try:
+        validate_inputs(interval, duration)
+    except ValueError as e:
+        logger.error(f'input validation failed: {e}')
+        return
 
-    def run_sequence(self, coordinates: list[Tuple[int, int]]) -> None:
-        """Iterates through points with defined delay."""
-        self.running = True
-        try:
-            for x, y in coordinates:
-                if not self.running:
-                    break
-                self.perform_click(x, y)
-                time.sleep(self.interval)
-        finally:
-            self.running = False
+    start_time = time.time()
+    logger.info(f'starting clicker: {interval}s interval for {duration}s')
 
-    def stop(self) -> None:
-        """Interrupts active automation sequence."""
-        self.running = False
+    try:
+        while time.time() - start_time < duration:
+            # Logic for performing click action goes here
+            time.sleep(interval)
+        logger.info('click sequence completed successfully')
+    except KeyboardInterrupt:
+        logger.info('process interrupted by user')
+
+if __name__ == '__main__':
+    run_processor(0.1, 5.0)
