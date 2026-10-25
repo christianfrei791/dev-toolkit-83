@@ -1,37 +1,38 @@
 import time
-import functools
-import requests
-from typing import Callable, Any
+import threading
+from typing import Callable
 
-def retry_operation(retries: int = 3, delay: float = 1.0):
-    """Decorator for retrying network operations on failure."""
-    def decorator(func: Callable):
-        @functools.wraps(func)
-        def wrapper(*args, **kwargs) -> Any:
-            last_exception = None
-            for attempt in range(retries):
-                try:
-                    return func(*args, **kwargs)
-                except (requests.RequestException, ConnectionError) as e:
-                    last_exception = e
-                    if attempt < retries - 1:
-                        time.sleep(delay * (2 ** attempt))
-                    continue
-            raise last_exception
-        return wrapper
-    return decorator
+class ClickerCore:
+    """
+    Core clicker engine with high-precision polling
+    using optimized thread sleep intervals.
+    """
+    def __init__(self, interval: float = 0.01):
+        self.interval = interval
+        self.running = False
+        self._lock = threading.Lock()
 
-@retry_operation(retries=3, delay=2.0)
-def fetch_remote_config(url: str) -> dict:
-    """Example network call for the autoclicker configuration."""
-    response = requests.get(url, timeout=5)
-    response.raise_for_status()
-    return response.json()
+    def start_clicking(self, action_func: Callable[[], None]) -> None:
+        """
+        Executes action with nanosecond-ready precision.
+        Reduces CPU overhead by calculating drift.
+        """
+        self.running = True
+        next_call = time.perf_counter()
+        
+        while self.running:
+            with self._lock:
+                action_func()
+            
+            # Precision interval management
+            next_call += self.interval
+            sleep_time = next_call - time.perf_counter()
+            
+            if sleep_time > 0:
+                time.sleep(sleep_time)
 
-if __name__ == "__main__":
-    # Mock test execution for core network retrieval
-    try:
-        data = fetch_remote_config("https://api.dev-toolkit-83.local/v1/config")
-        print("Successfully retrieved remote configuration.")
-    except Exception as err:
-        print(f"Critical network failure after retries: {err}")
+    def stop(self) -> None:
+        """
+        Signals the clicker thread to terminate.
+        """
+        self.running = False
