@@ -1,35 +1,30 @@
 import logging
-from logging.handlers import RotatingFileHandler
-import os
+import sys
+from pathlib import Path
 
-def setup_logger(name: str = "dev-toolkit-83") -> logging.Logger:
-    """Configures a rotating file logger for the autoclicker."""
+# Configure global logging for dev-toolkit-83
+LOG_FILE = Path("dev-toolkit.log")
+
+def setup_logger(name: str = "dev-toolkit") -> logging.Logger:
+    """Configures a standard logger instance."""
     logger = logging.getLogger(name)
     logger.setLevel(logging.INFO)
-
-    if not os.path.exists("logs"):
-        os.makedirs("logs")
-
-    # Rotate logs at 5MB, keep 3 backups
-    handler = RotatingFileHandler(
-        "logs/autoclicker.log",
-        maxBytes=5 * 1024 * 1024,
-        backupCount=3
-    )
 
     formatter = logging.Formatter(
         "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
     )
-    handler.setFormatter(formatter)
 
-    if not logger.handlers:
-        logger.addHandler(handler)
-        # Also output to console for development visibility
-        console_handler = logging.StreamHandler()
-        console_handler.setFormatter(formatter)
-        logger.addHandler(console_handler)
+    # Console handler for real-time feedback
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setFormatter(formatter)
+    logger.addHandler(console_handler)
+
+    # File handler for persistent execution history
+    file_handler = logging.FileHandler(LOG_FILE)
+    file_handler.setFormatter(formatter)
+    logger.addHandler(file_handler)
 
     return logger
 
-# Initialize default logger instance
+# Instantiate default logger for project modules
 logger = setup_logger()
