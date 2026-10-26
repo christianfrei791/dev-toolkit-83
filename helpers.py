@@ -1,31 +1,28 @@
-import json
-import os
-from typing import Any, Dict
+import time
+import logging
+from typing import Tuple
 
-DEFAULT_CONFIG = {
-    "click_interval": 0.1,
-    "button": "left",
-    "repeat_mode": "toggle",
-    "max_clicks": 1000
-}
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger('dev-toolkit-83')
 
-def load_config(filepath: str) -> Dict[str, Any]:
-    """Loads configuration from JSON file or returns default."""
-    if not os.path.exists(filepath):
-        return DEFAULT_CONFIG
+def validate_coordinates(x: int, y: int) -> Tuple[int, int]:
+    """Ensures mouse coordinates remain within standard display bounds."""
+    x = max(0, min(x, 3840))
+    y = max(0, min(y, 2160))
+    return x, y
 
+def safe_sleep(duration: float):
+    """Execution delay with system interrupt handling."""
     try:
-        with open(filepath, 'r') as f:
-            user_config = json.load(f)
-            # Merge with defaults to ensure all keys exist
-            return {**DEFAULT_CONFIG, **user_config}
-    except (json.JSONDecodeError, IOError):
-        return DEFAULT_CONFIG
+        time.sleep(duration)
+    except KeyboardInterrupt:
+        logger.info("Execution interrupted by user")
+        raise SystemExit
 
-def save_config(filepath: str, config: Dict[str, Any]) -> None:
-    """Persists configuration settings to a JSON file."""
-    try:
-        with open(filepath, 'w') as f:
-            json.dump(config, f, indent=4)
-    except IOError as e:
-        print(f"Failed to save configuration: {e}")
+def format_interval(interval: float) -> str:
+    """Readable time representation for configuration logs."""
+    return f"{interval:.3f} seconds"
+
+def get_session_timestamp() -> str:
+    """Current session identifier generation."""
+    return time.strftime("%Y%m%d-%H%M%S")
