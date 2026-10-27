@@ -1,37 +1,31 @@
 import time
-import logging
+import pyautogui
+from typing import Optional
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger('dev-toolkit-83')
+class ClickProcessor:
+    """Handles the core execution logic for the autoclicker."""
 
-def validate_inputs(interval, duration):
-    """Ensures click parameters are within operational safety bounds."""
-    if not isinstance(interval, (int, float)) or not isinstance(duration, (int, float)):
-        raise ValueError('interval and duration must be numeric')
-    if interval < 0.01:
-        raise ValueError('interval too low, risk of system instability')
-    if duration < 0:
-        raise ValueError('duration cannot be negative')
-    return True
+    def __init__(self, interval: float = 0.1):
+        self.interval = interval
+        self.running = False
 
-def run_processor(interval: float, duration: float):
-    """Main processing loop for autoclicker execution."""
-    try:
-        validate_inputs(interval, duration)
-    except ValueError as e:
-        logger.error(f'input validation failed: {e}')
-        return
+    def start_clicking(self, duration: Optional[int] = None):
+        """Executes mouse clicks until stopped or duration expires."""
+        self.running = True
+        start_time = time.time()
 
-    start_time = time.time()
-    logger.info(f'starting clicker: {interval}s interval for {duration}s')
+        while self.running:
+            pyautogui.click()
+            time.sleep(self.interval)
 
-    try:
-        while time.time() - start_time < duration:
-            # Logic for performing click action goes here
-            time.sleep(interval)
-        logger.info('click sequence completed successfully')
-    except KeyboardInterrupt:
-        logger.info('process interrupted by user')
+            if duration and (time.time() - start_time) >= duration:
+                self.stop_clicking()
 
-if __name__ == '__main__':
-    run_processor(0.1, 5.0)
+    def stop_clicking(self):
+        """Terminates the click loop."""
+        self.running = False
+
+    def set_interval(self, new_interval: float):
+        """Updates the delay between clicks."""
+        if new_interval > 0:
+            self.interval = new_interval
