@@ -1,30 +1,33 @@
 import logging
 import sys
-from pathlib import Path
+from typing import Optional
 
-# Configure global logging for dev-toolkit-83
-LOG_FILE = Path("dev-toolkit.log")
+class DevLogger:
+    """Handles application logging for the autoclicker module."""
 
-def setup_logger(name: str = "dev-toolkit") -> logging.Logger:
-    """Configures a standard logger instance."""
-    logger = logging.getLogger(name)
-    logger.setLevel(logging.INFO)
+    def __init__(self, name: str, level: int = logging.INFO) -> None:
+        self.logger = logging.getLogger(name)
+        self.logger.setLevel(level)
+        
+        handler = logging.StreamHandler(sys.stdout)
+        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        handler.setFormatter(formatter)
+        
+        if not self.logger.handlers:
+            self.logger.addHandler(handler)
 
-    formatter = logging.Formatter(
-        "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-    )
+    def info(self, message: str) -> None:
+        """Logs informational messages."""
+        self.logger.info(message)
 
-    # Console handler for real-time feedback
-    console_handler = logging.StreamHandler(sys.stdout)
-    console_handler.setFormatter(formatter)
-    logger.addHandler(console_handler)
+    def error(self, message: str, exc_info: Optional[Exception] = None) -> None:
+        """Logs error messages with optional exception info."""
+        self.logger.error(message, exc_info=exc_info)
 
-    # File handler for persistent execution history
-    file_handler = logging.FileHandler(LOG_FILE)
-    file_handler.setFormatter(formatter)
-    logger.addHandler(file_handler)
+    def warning(self, message: str) -> None:
+        """Logs warning messages."""
+        self.logger.warning(message)
 
-    return logger
-
-# Instantiate default logger for project modules
-logger = setup_logger()
+def get_logger(name: str) -> DevLogger:
+    """Factory function to create a configured logger instance."""
+    return DevLogger(name)
