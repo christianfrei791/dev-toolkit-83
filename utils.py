@@ -1,35 +1,34 @@
-import time
-import logging
-from typing import Optional
+import json
+import os
+from typing import Dict, Any
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger('dev-toolkit-83')
+def load_click_profile(filepath: str) -> Dict[str, Any]:
+    """Loads autoclicker configuration from a JSON file."""
+    if not os.path.exists(filepath):
+        return {"interval": 0.1, "clicks": 100, "button": "left"}
+    
+    with open(filepath, "r") as f:
+        try:
+            return json.load(f)
+        except json.JSONDecodeError:
+            return {}
 
-def sleep_interval(duration: float, jitter: float = 0.05) -> None:
-    """Pauses execution for a duration with optional jitter."""
-    import random
-    actual_sleep = duration + random.uniform(-jitter, jitter)
-    time.sleep(max(0, actual_sleep))
+def save_click_profile(filepath: str, data: Dict[str, Any]) -> bool:
+    """Saves current click settings to persistent storage."""
+    try:
+        with open(filepath, "w") as f:
+            json.dump(data, f, indent=4)
+        return True
+    except IOError:
+        return False
 
-def format_timestamp(timestamp: float) -> str:
-    """Converts float time to readable string format."""
-    return time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(timestamp))
-
-def validate_coordinates(x: int, y: int) -> bool:
-    """Ensures click coordinates are non-negative."""
-    return x >= 0 and y >= 0
-
-class ClickContext:
-    """Tracks state for click automation sequences."""
-    def __init__(self, interval: float = 1.0):
-        self.interval = interval
-        self.click_count = 0
-        self.start_time = time.time()
-
-    def increment(self) -> None:
-        self.click_count += 1
-        logger.info(f'Click sequence progress: {self.click_count}')
-
-    def reset(self) -> None:
-        self.click_count = 0
-        self.start_time = time.time()
+def validate_click_data(data: Dict[str, Any]) -> bool:
+    """Ensures configuration values are within safe bounds."""
+    interval = data.get("interval", 0.1)
+    clicks = data.get("clicks", 1)
+    
+    if not isinstance(interval, (int, float)) or interval < 0.01:
+        return False
+    if not isinstance(clicks, int) or clicks < 0:
+        return False
+    return True
