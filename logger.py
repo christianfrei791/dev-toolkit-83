@@ -1,33 +1,34 @@
 import logging
-import sys
-from typing import Optional
+from logging.handlers import RotatingFileHandler
+import os
 
-class DevLogger:
-    """Handles application logging for the autoclicker module."""
+def setup_logger(name='dev-toolkit-83', log_file='autoclicker.log'):
+    """Initializes a rotating file logger for system events."""
+    logger = logging.getLogger(name)
+    logger.setLevel(logging.DEBUG)
 
-    def __init__(self, name: str, level: int = logging.INFO) -> None:
-        self.logger = logging.getLogger(name)
-        self.logger.setLevel(level)
-        
-        handler = logging.StreamHandler(sys.stdout)
-        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-        handler.setFormatter(formatter)
-        
-        if not self.logger.handlers:
-            self.logger.addHandler(handler)
+    # Prevent duplicate handlers if function is called multiple times
+    if not logger.handlers:
+        # Format: timestamp - module - level - message
+        formatter = logging.Formatter(
+            '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        )
 
-    def info(self, message: str) -> None:
-        """Logs informational messages."""
-        self.logger.info(message)
+        # Rotate logs at 1MB, keep 3 backups
+        file_handler = RotatingFileHandler(
+            log_file, 
+            maxBytes=1*1024*1024, 
+            backupCount=3
+        )
+        file_handler.setFormatter(formatter)
+        logger.addHandler(file_handler)
 
-    def error(self, message: str, exc_info: Optional[Exception] = None) -> None:
-        """Logs error messages with optional exception info."""
-        self.logger.error(message, exc_info=exc_info)
+        # Optional console output for debugging during development
+        console_handler = logging.StreamHandler()
+        console_handler.setFormatter(formatter)
+        logger.addHandler(console_handler)
 
-    def warning(self, message: str) -> None:
-        """Logs warning messages."""
-        self.logger.warning(message)
+    return logger
 
-def get_logger(name: str) -> DevLogger:
-    """Factory function to create a configured logger instance."""
-    return DevLogger(name)
+# Global logger instance for the project
+logger = setup_logger()
