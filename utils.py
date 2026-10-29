@@ -2,33 +2,31 @@ import json
 import os
 from typing import Dict, Any
 
-def load_click_profile(filepath: str) -> Dict[str, Any]:
-    """Loads autoclicker configuration from a JSON file."""
+def load_click_config(filepath: str) -> Dict[str, Any]:
+    """Loads autoclicker settings from a JSON file."""
     if not os.path.exists(filepath):
-        return {"interval": 0.1, "clicks": 100, "button": "left"}
+        return {"interval": 0.1, "button": "left", "repeats": 0}
     
-    with open(filepath, "r") as f:
+    with open(filepath, 'r') as f:
         try:
             return json.load(f)
         except json.JSONDecodeError:
             return {}
 
-def save_click_profile(filepath: str, data: Dict[str, Any]) -> bool:
-    """Saves current click settings to persistent storage."""
+def save_click_config(filepath: str, data: Dict[str, Any]) -> bool:
+    """Persists autoclicker configuration to disk."""
     try:
-        with open(filepath, "w") as f:
+        with open(filepath, 'w') as f:
             json.dump(data, f, indent=4)
         return True
     except IOError:
         return False
 
-def validate_click_data(data: Dict[str, Any]) -> bool:
-    """Ensures configuration values are within safe bounds."""
-    interval = data.get("interval", 0.1)
-    clicks = data.get("clicks", 1)
-    
-    if not isinstance(interval, (int, float)) or interval < 0.01:
-        return False
-    if not isinstance(clicks, int) or clicks < 0:
-        return False
-    return True
+def validate_coordinates(x: int, y: int) -> bool:
+    """Ensures click coordinates are within bounds."""
+    return x >= 0 and y >= 0
+
+def format_click_stats(clicks: int, duration: float) -> str:
+    """Calculates and formats performance metrics."""
+    rate = clicks / duration if duration > 0 else 0
+    return f"Total Clicks: {clicks} | Rate: {rate:.2f} clicks/sec"
