@@ -1,33 +1,25 @@
 import logging
 
-def validate_click_params(interval: float, duration: float) -> bool:
-    """
-    Validates input parameters for the autoclicker logic.
-    Ensures timing constraints are within logical bounds.
-    """
-    logger = logging.getLogger(__name__)
+# Configuration constraints for the autoclicker
+MIN_INTERVAL = 0.01
+MAX_INTERVAL = 60.0
+ALLOWED_BUTTONS = ['left', 'right', 'middle']
 
-    if not isinstance(interval, (int, float)) or not isinstance(duration, (int, float)):
-        logger.error("Invalid parameter type: inputs must be numeric")
+def validate_click_params(interval, button):
+    """Ensures click parameters are within safe operational bounds."""
+    if not isinstance(interval, (int, float)) or not (MIN_INTERVAL <= interval <= MAX_INTERVAL):
+        logging.error(f"Invalid interval: {interval}. Must be between {MIN_INTERVAL} and {MAX_INTERVAL}")
         return False
 
-    if interval < 0.01:
-        logger.warning("Interval too low, clamping to 0.01s")
-        return False
-
-    if duration < 0:
-        logger.error("Duration cannot be negative")
+    if button not in ALLOWED_BUTTONS:
+        logging.error(f"Invalid mouse button: {button}. Must be one of {ALLOWED_BUTTONS}")
         return False
 
     return True
 
-def sanitize_coordinates(x: int, y: int, screen_res: tuple) -> bool:
-    """
-    Checks if coordinates are within defined screen resolution.
-    """
-    width, height = screen_res
-    if 0 <= x <= width and 0 <= y <= height:
-        return True
-    
-    logging.error(f"Coordinates ({x}, {y}) out of screen bounds")
-    return False
+def validate_coordinates(x, y):
+    """Checks if provided screen coordinates are non-negative."""
+    if x < 0 or y < 0:
+        logging.error(f"Invalid coordinates: ({x}, {y}). Coordinates cannot be negative.")
+        return False
+    return True
