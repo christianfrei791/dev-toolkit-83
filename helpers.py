@@ -1,28 +1,36 @@
-import time
-import logging
-from typing import Tuple
+def validate_click_settings(interval, clicks):
+    """
+    Validates input parameters for the autoclicker loop.
+    Ensures interval is positive and clicks count is valid.
+    """
+    if not isinstance(interval, (int, float)) or interval <= 0:
+        raise ValueError(f"Invalid interval: {interval}. Must be a positive number.")
+    
+    if not isinstance(clicks, int) or clicks < -1:
+        raise ValueError(f"Invalid click count: {clicks}. Use -1 for infinite.")
+    
+    return True
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-logger = logging.getLogger('dev-toolkit-83')
-
-def validate_coordinates(x: int, y: int) -> Tuple[int, int]:
-    """Ensures mouse coordinates remain within standard display bounds."""
-    x = max(0, min(x, 3840))
-    y = max(0, min(y, 2160))
-    return x, y
-
-def safe_sleep(duration: float):
-    """Execution delay with system interrupt handling."""
+def sanitize_coordinates(x, y):
+    """
+    Ensures screen coordinates are non-negative integers.
+    """
     try:
-        time.sleep(duration)
-    except KeyboardInterrupt:
-        logger.info("Execution interrupted by user")
-        raise SystemExit
+        sanitized_x = int(x)
+        sanitized_y = int(y)
+        if sanitized_x < 0 or sanitized_y < 0:
+            raise ValueError("Coordinates must be non-negative.")
+        return sanitized_x, sanitized_y
+    except (TypeError, ValueError) as e:
+        raise ValueError(f"Coordinate input error: {e}")
 
-def format_interval(interval: float) -> str:
-    """Readable time representation for configuration logs."""
-    return f"{interval:.3f} seconds"
-
-def get_session_timestamp() -> str:
-    """Current session identifier generation."""
-    return time.strftime("%Y%m%d-%H%M%S")
+def process_input_stream(interval, clicks, x, y):
+    """
+    Execution wrapper for validated click parameters.
+    """
+    try:
+        validate_click_settings(interval, clicks)
+        coords = sanitize_coordinates(x, y)
+        return {"status": "ready", "params": (interval, clicks, coords)}
+    except ValueError as e:
+        return {"status": "error", "message": str(e)}
