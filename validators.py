@@ -1,25 +1,17 @@
-import logging
+import re
 
-# Configuration constraints for the autoclicker
-MIN_INTERVAL = 0.01
-MAX_INTERVAL = 60.0
-ALLOWED_BUTTONS = ['left', 'right', 'middle']
+def validate_interval(interval: float) -> bool:
+    """Ensures click interval is within safe hardware limits."""
+    return 0.01 <= interval <= 60.0
 
-def validate_click_params(interval, button):
-    """Ensures click parameters are within safe operational bounds."""
-    if not isinstance(interval, (int, float)) or not (MIN_INTERVAL <= interval <= MAX_INTERVAL):
-        logging.error(f"Invalid interval: {interval}. Must be between {MIN_INTERVAL} and {MAX_INTERVAL}")
-        return False
+def validate_coordinates(x: int, y: int) -> bool:
+    """Checks if coordinates fall within standard display bounds."""
+    return x >= 0 and y >= 0
 
-    if button not in ALLOWED_BUTTONS:
-        logging.error(f"Invalid mouse button: {button}. Must be one of {ALLOWED_BUTTONS}")
-        return False
+def validate_hotkey(key: str) -> bool:
+    """Verifies hotkey format against simple character constraints."""
+    return bool(re.match(r'^[a-z0-9]$', key.lower()))
 
-    return True
-
-def validate_coordinates(x, y):
-    """Checks if provided screen coordinates are non-negative."""
-    if x < 0 or y < 0:
-        logging.error(f"Invalid coordinates: ({x}, {y}). Coordinates cannot be negative.")
-        return False
-    return True
+def sanitize_input(user_input: str) -> str:
+    """Strips whitespace and converts to lowercase for consistency."""
+    return str(user_input).strip().lower()
