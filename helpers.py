@@ -1,36 +1,29 @@
-def validate_click_settings(interval, clicks):
-    """
-    Validates input parameters for the autoclicker loop.
-    Ensures interval is positive and clicks count is valid.
-    """
-    if not isinstance(interval, (int, float)) or interval <= 0:
-        raise ValueError(f"Invalid interval: {interval}. Must be a positive number.")
-    
-    if not isinstance(clicks, int) or clicks < -1:
-        raise ValueError(f"Invalid click count: {clicks}. Use -1 for infinite.")
-    
-    return True
+import time
+import random
+from typing import Tuple
 
-def sanitize_coordinates(x, y):
-    """
-    Ensures screen coordinates are non-negative integers.
-    """
-    try:
-        sanitized_x = int(x)
-        sanitized_y = int(y)
-        if sanitized_x < 0 or sanitized_y < 0:
-            raise ValueError("Coordinates must be non-negative.")
-        return sanitized_x, sanitized_y
-    except (TypeError, ValueError) as e:
-        raise ValueError(f"Coordinate input error: {e}")
+def sleep_random(min_ms: int, max_ms: int) -> None:
+    """Wait for a random duration to simulate human input."""
+    seconds = random.randint(min_ms, max_ms) / 1000.0
+    time.sleep(seconds)
 
-def process_input_stream(interval, clicks, x, y):
-    """
-    Execution wrapper for validated click parameters.
-    """
-    try:
-        validate_click_settings(interval, clicks)
-        coords = sanitize_coordinates(x, y)
-        return {"status": "ready", "params": (interval, clicks, coords)}
-    except ValueError as e:
-        return {"status": "error", "message": str(e)}
+def format_coordinates(x: int, y: int) -> Tuple[int, int]:
+    """Ensure coordinates are positive integers for screen bounds."""
+    return (max(0, x), max(0, y))
+
+def generate_jitter(value: int, variance: int) -> int:
+    """Add minor offset to inputs for anti-detection."""
+    return value + random.randint(-variance, variance)
+
+class ClickerTimer:
+    """Context manager for tracking click execution time."""
+    def __init__(self):
+        self.start_time = 0.0
+
+    def __enter__(self):
+        self.start_time = time.perf_counter()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        duration = time.perf_counter() - self.start_time
+        return duration
