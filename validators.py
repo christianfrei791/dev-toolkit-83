@@ -1,17 +1,29 @@
-import re
+import logging
 
-def validate_interval(interval: float) -> bool:
-    """Ensures click interval is within safe hardware limits."""
-    return 0.01 <= interval <= 60.0
+def validate_click_settings(interval, duration, button):
+    """Ensures input values meet domain constraints."""
+    if not isinstance(interval, (int, float)) or interval < 0.01:
+        raise ValueError(f"Invalid interval: {interval}. Must be >= 0.01s")
+    
+    if not isinstance(duration, (int, float)) or duration < 0:
+        raise ValueError(f"Invalid duration: {duration}. Must be >= 0")
+    
+    valid_buttons = ['left', 'right', 'middle']
+    if button not in valid_buttons:
+        raise ValueError(f"Invalid button: {button}. Must be one of {valid_buttons}")
+    
+    return True
 
-def validate_coordinates(x: int, y: int) -> bool:
-    """Checks if coordinates fall within standard display bounds."""
-    return x >= 0 and y >= 0
+def validate_coordinates(x, y, screen_width, screen_height):
+    """Checks if coordinate pair is within monitor bounds."""
+    if not (0 <= x <= screen_width):
+        raise ValueError(f"X coordinate {x} out of screen bounds")
+    if not (0 <= y <= screen_height):
+        raise ValueError(f"Y coordinate {y} out of screen bounds")
+    return True
 
-def validate_hotkey(key: str) -> bool:
-    """Verifies hotkey format against simple character constraints."""
-    return bool(re.match(r'^[a-z0-9]$', key.lower()))
-
-def sanitize_input(user_input: str) -> str:
-    """Strips whitespace and converts to lowercase for consistency."""
-    return str(user_input).strip().lower()
+def sanitize_input(user_input):
+    """Basic string cleanup for configuration inputs."""
+    if isinstance(user_input, str):
+        return user_input.strip().lower()
+    return user_input
