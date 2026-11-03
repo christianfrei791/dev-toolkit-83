@@ -1,34 +1,33 @@
-import json
-import os
-from typing import Dict, Any
+import time
+import functools
+import logging
 
-CONFIG_PATH = "settings.json"
+# Logger setup for dev-toolkit-83
+logger = logging.getLogger('dev-toolkit-83')
 
-def load_click_settings() -> Dict[str, Any]:
-    """Reads autoclicker configuration from local storage."""
-    if not os.path.exists(CONFIG_PATH):
-        return {"interval": 0.1, "button": "left", "repeat": -1}
-    
-    with open(CONFIG_PATH, "r") as f:
-        try:
-            return json.load(f)
-        except json.JSONDecodeError:
-            return {}
+def retry_on_failure(max_attempts=3, delay=1.5):
+    """
+    Decorator for retrying network operations on exceptions.
+    """
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            last_exception = None
+            for attempt in range(1, max_attempts + 1):
+                try:
+                    return func(*args, **kwargs)
+                except Exception as e:
+                    last_exception = e
+                    logger.warning(f"Attempt {attempt} failed: {e}")
+                    if attempt < max_attempts:
+                        time.sleep(delay)
+            logger.error(f"Function {func.__name__} failed after {max_attempts} attempts")
+            raise last_exception
+        return wrapper
+    return decorator
 
-def save_click_settings(data: Dict[str, Any]) -> bool:
-    """Persists autoclicker configuration to local storage."""
-    try:
-        with open(CONFIG_PATH, "w") as f:
-            json.dump(data, f, indent=4)
-        return True
-    except IOError:
-        return False
-
-def validate_coordinates(x: int, y: int) -> bool:
-    """Ensures click coordinates are within bounds."""
-    return isinstance(x, int) and isinstance(y, int) and x >= 0 and y >= 0
-
-def format_click_stats(clicks: int, duration: float) -> str:
-    """Generates human readable performance summary strings."""
-    cps = clicks / duration if duration > 0 else 0
-    return f"Total clicks: {clicks} | Average CPS: {cps:.2f}"
+def validate_connection_status(status_code: int) -> bool:
+    """
+    Simple helper to check status code viability.
+    """
+    return 200 <= status_code < 300
