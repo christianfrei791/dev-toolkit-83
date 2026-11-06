@@ -1,33 +1,48 @@
-import time
-import functools
-import logging
+import json
+from typing import Dict, List, Any
 
-# Logger setup for dev-toolkit-83
-logger = logging.getLogger('dev-toolkit-83')
 
-def retry_on_failure(max_attempts=3, delay=1.5):
-    """
-    Decorator for retrying network operations on exceptions.
-    """
-    def decorator(func):
-        @functools.wraps(func)
-        def wrapper(*args, **kwargs):
-            last_exception = None
-            for attempt in range(1, max_attempts + 1):
-                try:
-                    return func(*args, **kwargs)
-                except Exception as e:
-                    last_exception = e
-                    logger.warning(f"Attempt {attempt} failed: {e}")
-                    if attempt < max_attempts:
-                        time.sleep(delay)
-            logger.error(f"Function {func.__name__} failed after {max_attempts} attempts")
-            raise last_exception
-        return wrapper
-    return decorator
+def validate_click_config(config: Dict[str, Any]) -> bool:
+    """Validates the basic configuration structure for an autoclicker session."""
+    required_keys = {"interval", "button", "click_type"}
+    if not required_keys.issubset(config.keys()):
+        return False
 
-def validate_connection_status(status_code: int) -> bool:
-    """
-    Simple helper to check status code viability.
-    """
-    return 200 <= status_code < 300
+    if not isinstance(config["interval"], (int, float)) or config["interval"] <= 0:
+        return False
+
+    if config["button"] not in ("left", "right", "middle"):
+        return False
+
+    if config["click_type"] not in ("single", "double", "hold"):
+        return False
+
+    return True
+
+
+def parse_click_sequence(data_json: str) -> List[Dict[str, Any]]:
+    """Parses a JSON string into a structured list of click events."""
+    try:
+        raw_events = json.loads(data_json)
+        if not isinstance(raw_events, list):
+            return []
+
+        valid_events = []
+        for event in raw_events:
+            if isinstance(event, dict) and "x" in event and "y" in event:
+                valid_events.append({
+                    "x": int(event["x"]),
+                    "y": int(event["y"]),
+                    "delay": float(event.get("delay", 0.1)),
+                    "button": str(event.get("button", "left"))
+                })
+        return valid_events
+    except (json.JSONDecodeError, TypeError, ValueError):
+        return []
+
+
+def calculate_cps(interval: float) -> float:
+    """Calculates clicks per second (CPS) based on interval in seconds."""
+    if interval <= 0:
+        return 0.0
+    return round(1.0 / interval, 2)
