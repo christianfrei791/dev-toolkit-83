@@ -1,40 +1,37 @@
 import logging
+from logging.handlers import RotatingFileHandler
 import os
-from datetime import datetime
 
-# Configure logging for dev-toolkit-83
-LOG_DIR = "logs"
-if not os.path.exists(LOG_DIR):
-    os.makedirs(LOG_DIR)
-
-def get_logger(name: str):
-    """Initializes a standard logger for tracking autoclicker events."""
+def setup_logger(name: str = "dev-toolkit-83", log_file: str = "app.log") -> logging.Logger:
+    """Configures a rotating file logger for autoclicker operations."""
     logger = logging.getLogger(name)
     logger.setLevel(logging.INFO)
-    
+
+    # Prevent duplicate handlers if setup is called multiple times
+    if logger.hasHandlers():
+        return logger
+
+    # Formatter for clear log entries
     formatter = logging.Formatter(
         '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     )
-    
-    # Log to file with timestamp
-    log_filename = f"{LOG_DIR}/clicker_{datetime.now().strftime('%Y-%m-%d')}.log"
-    file_handler = logging.FileHandler(log_filename)
+
+    # Setup rotating file handler: max 5MB, keep 3 backup files
+    file_handler = RotatingFileHandler(
+        log_file, 
+        maxBytes=5*1024*1024, 
+        backupCount=3
+    )
     file_handler.setFormatter(formatter)
-    
-    # Also log to console
-    stream_handler = logging.StreamHandler()
-    stream_handler.setFormatter(formatter)
-    
-    if not logger.handlers:
-        logger.addHandler(file_handler)
-        logger.addHandler(stream_handler)
-        
+
+    # Setup console handler for real-time visibility
+    console_handler = logging.StreamHandler()
+    console_handler.setFormatter(formatter)
+
+    logger.addHandler(file_handler)
+    logger.addHandler(console_handler)
+
     return logger
 
-def log_click_event(logger, x: int, y: int, button: str):
-    """Records specific click coordinates and button input."""
-    logger.info(f"Action: Click | Pos: ({x}, {y}) | Button: {button}")
-
-def log_error(logger, message: str, exception: Exception):
-    """Standardized logging format for runtime exceptions."""
-    logger.error(f"Event failure: {message} | Error: {str(exception)}")
+# Initialize default instance
+logger = setup_logger()
