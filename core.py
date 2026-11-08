@@ -1,55 +1,71 @@
+import ctypes
 import time
-import threading
 from typing import Callable, Optional
 
+# Win32 API constants for low-latency click events
+MOUSEEVENTF_LEFTDOWN = 0x0002
+MOUSEEVENTF_LEFTUP = 0x0004
+MOUSEEVENTF_RIGHTDOWN = 0x0008
+MOUSEEVENTF_RIGHTUP = 0x0010
 
-class ClickEngine:
-    """High-performance click engine utilizing precise timing loops."""
 
-    def __init__(self, click_func: Callable[[], None], interval: float = 0.001):
-        self.click_func = click_func
-        self.interval = max(0.0001, interval)
-        self._running = False
-        self._thread: Optional[threading.Thread] = None
-        self._clicks_count = 0
+class OptimizedClickEngine:
+    """High-precision click engine using high-resolution timing and direct API calls."""
 
-    def _optimized_loop(self) -> None:
-        """Executes clicks with sub-millisecond precision busy-wait drift correction."""
-        next_time = time.perf_counter()
-        while self._running:
-            self.click_func()
-            self._clicks_count += 1
-            next_time += self.interval
+    def __init__(
+        self,
+        cps: float = 100.0,
+        click_type: str = "left",
+        on_click: Optional[Callable[[int], None]] = None,
+    ):
+        self.interval = 1.0 / max(cps, 1.0)
+        self.click_type = click_type
+        self.on_click = on_click
+        self.is_running = False
+        self.total_clicks = 0
 
-            # Coarse sleep to free CPU resources
-            sleep_duration = next_time - time.perf_counter()
-            if sleep_duration > 0.002:
-                time.sleep(sleep_duration - 0.001)
+        # Pre-calculate flags to minimize lookup overhead inside high-frequency loop
+        if self.click_type == "right":
+            self._down_flag = MOUSEEVENTF_RIGHTDOWN
+            self._up_flag = MOUSEEVENTF_RIGHTUP
+        else:
+            self._down_flag = MOUSEEVENTF_LEFTDOWN
+            self._up_flag = MOUSEEVENTF_LEFTUP
 
-            # Spin lock for exact sub-millisecond alignment
-            while time.perf_counter() < next_time:
-                pass
+    def _execute_click(self) -> None:
+        """Executes a single mouse click with minimal OS abstraction overhead."""
+        ctypes.windll.user32.mouse_event(self._down_flag, 0, 0, 0, 0)
+        ctypes.windll.user32.mouse_event(self._up_flag, 0, 0, 0, 0)
+        self.total_clicks += 1
+        if self.on_click:
+            self.on_click(self.total_clicks)
 
-    def start(self) -> None:
-        """Starts the autoclicker engine on a dedicated thread."""
-        if self._running:
-            return
-        self._running = True
-        self._clicks_count = 0
-        self._thread = threading.Thread(target=self._optimized_loop, daemon=True)
-        self._thread.start()
+    def start(self, duration: Optional[float] = None) -> int:
+        """Runs click loop with hybrid spin-wait strategy for precise CPS control."""
+        self.is_running = True
+        self.total_clicks = 0
+        start_time = time.perf_counter()
+        next_click_time = start_time
+
+        while self.is_running:
+            now = time.perf_counter()
+            if duration and (now - start_time) >= duration:
+                break
+
+            if now >= next_click_time:
+                self._execute_click()
+                next_click_time += self.interval
+
+            # Hybrid strategy: yield CPU for long delays, busy-wait for sub-millisecond accuracy
+            sleep_time = next_click_time - time.perf_counter()
+            if sleep_time > 0.002:
+                time.sleep(sleep_time - 0.001)
+            elif sleep_time > 0:
+                pass  # Spin-lock window to prevent scheduler drift
+
+        self.is_running = False
+        return self.total_clicks
 
     def stop(self) -> None:
-        """Stops the autoclicker engine safely."""
-        self._running = False
-        if self._thread and self._thread.is_alive():
-            self._thread.join(timeout=1.0)
-
-    @property
-    def stats(self) -> dict:
-        """Returns engine execution statistics."""
-        return {
-            "running": self._running,
-            "clicks": self._clicks_count,
-            "interval": self.interval
-        }
+        """Stops click loop execution immediately."""
+        self.is_running = False
