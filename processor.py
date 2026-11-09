@@ -1,31 +1,31 @@
 import time
 import pyautogui
-from typing import Optional
+from typing import Tuple, Optional
 
 class ClickProcessor:
-    """Handles the core execution logic for the autoclicker."""
+    """Handles automated clicking logic for dev-toolkit-83."""
 
-    def __init__(self, interval: float = 0.1):
-        self.interval = interval
-        self.running = False
+    def __init__(self, interval: float = 0.1) -> None:
+        """Initialize processor with specified click interval."""
+        self.interval: float = interval
 
-    def start_clicking(self, duration: Optional[int] = None):
-        """Executes mouse clicks until stopped or duration expires."""
-        self.running = True
-        start_time = time.time()
-
-        while self.running:
-            pyautogui.click()
+    def perform_click(self, coordinates: Tuple[int, int]) -> bool:
+        """Executes a mouse click at target coordinates."""
+        try:
+            x, y = coordinates
+            pyautogui.click(x=x, y=y)
             time.sleep(self.interval)
+            return True
+        except Exception:
+            return False
 
-            if duration and (time.time() - start_time) >= duration:
-                self.stop_clicking()
+    def run_sequence(self, points: list[Tuple[int, int]], repeats: int = 1) -> None:
+        """Iterates through a list of points multiple times."""
+        for _ in range(repeats):
+            for point in points:
+                if not self.perform_click(point):
+                    break
 
-    def stop_clicking(self):
-        """Terminates the click loop."""
-        self.running = False
-
-    def set_interval(self, new_interval: float):
-        """Updates the delay between clicks."""
-        if new_interval > 0:
-            self.interval = new_interval
+    def get_status(self) -> str:
+        """Returns current operational state of processor."""
+        return f"Active with interval: {self.interval}s"
