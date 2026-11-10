@@ -1,34 +1,30 @@
 import time
-import pyautogui
 import random
+import pyautogui
 
-def safe_click(x: int, y: int, interval: float = 0.1):
-    """Move mouse to coordinates and perform a click with jitter."""
-    target_x = x + random.randint(-2, 2)
-    target_y = y + random.randint(-2, 2)
-    pyautogui.moveTo(target_x, target_y, duration=0.2)
-    pyautogui.click()
+def safe_click(x, y, interval=0.1):
+    """Performs a mouse click at coordinates with a small random jitter."""
+    jitter_x = random.randint(-2, 2)
+    jitter_y = random.randint(-2, 2)
+    pyautogui.click(x + jitter_x, y + jitter_y)
     time.sleep(interval)
 
-def get_screen_center():
-    """Calculate the center point of the primary display."""
-    width, height = pyautogui.size()
-    return width // 2, height // 2
+def hold_key(key, duration):
+    """Holds a keyboard key for a specified duration."""
+    pyautogui.keyDown(key)
+    time.sleep(duration)
+    pyautogui.keyUp(key)
 
-def sleep_random(min_s: float, max_s: float):
-    """Wait for a randomized duration to simulate human behavior."""
+def wait_random(min_s, max_s):
+    """Sleeps for a random interval within given range."""
     delay = random.uniform(min_s, max_s)
     time.sleep(delay)
 
-def validate_coordinates(x: int, y: int):
-    """Check if coordinates are within screen bounds."""
+def get_screen_center():
+    """Returns the center coordinates of the primary display."""
     width, height = pyautogui.size()
-    return 0 <= x <= width and 0 <= y <= height
+    return width // 2, height // 2
 
-def perform_sequence(points: list):
-    """Iterate through a list of (x, y) tuples and click them."""
-    for x, y in points:
-        if validate_coordinates(x, y):
-            safe_click(x, y)
-        else:
-            print(f"Invalid coordinates: {x}, {y}")
+def is_pixel_color(x, y, color):
+    """Checks if a pixel matches the provided RGB tuple."""
+    return pyautogui.pixelMatchesColor(x, y, color)
