@@ -1,29 +1,41 @@
 import time
-import pyautogui
+from typing import Callable, Optional, Dict
 
-def run_autoclicker(interval, count):
-    """Executes clicks based on user input parameters."""
-    if not isinstance(interval, (int, float)) or interval < 0.01:
-        raise ValueError("Interval must be a positive float >= 0.01 seconds.")
-    
-    if not isinstance(count, int) or count < 1:
-        raise ValueError("Click count must be an integer greater than 0.")
 
-    print(f"Starting autoclicker: {count} clicks at {interval}s intervals.")
-    
-    try:
-        for i in range(count):
-            pyautogui.click()
-            time.sleep(interval)
-            print(f"Click {i + 1}/{count} completed.")
-    except pyautogui.FailSafeException:
-        print("Fail-safe triggered. Stopping operation.")
-    except Exception as e:
-        print(f"Critical error during processing: {e}")
+class ClickHandler:
+    """Manages click trigger events and hotkey action bindings."""
 
-if __name__ == "__main__":
-    # Example usage with validated parameters
-    try:
-        run_autoclicker(0.5, 10)
-    except ValueError as err:
-        print(f"Invalid configuration: {err}")
+    def __init__(self, click_callback: Optional[Callable[[], None]] = None) -> None:
+        self.click_callback = click_callback
+        self.hotkeys: Dict[str, Callable[[], None]] = {}
+        self._is_active: bool = False
+
+    def register_hotkey(self, key_combo: str, callback: Callable[[], None]) -> None:
+        """Binds a shortcut combination to a specific callback action."""
+        normalized_combo = key_combo.strip().lower()
+        self.hotkeys[normalized_combo] = callback
+
+    def unregister_hotkey(self, key_combo: str) -> bool:
+        """Removes a registered hotkey binding."""
+        normalized_combo = key_combo.strip().lower()
+        if normalized_combo in self.hotkeys:
+            del self.hotkeys[normalized_combo]
+            return True
+        return False
+
+    def handle_key_event(self, key_combo: str) -> bool:
+        """Dispatches an incoming key press event to registered callbacks."""
+        normalized_combo = key_combo.strip().lower()
+        if normalized_combo in self.hotkeys:
+            self.hotkeys[normalized_combo]()
+            return True
+        return False
+
+    def trigger_click(self) -> None:
+        """Executes the configured click callback if active."""
+        if self._is_active and self.click_callback:
+            self.click_callback()
+
+    def set_active(self, active: bool) -> None:
+        """Updates the handler active status for event processing."""
+        self._is_active = active
