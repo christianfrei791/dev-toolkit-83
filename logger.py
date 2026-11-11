@@ -1,37 +1,45 @@
 import logging
-from logging.handlers import RotatingFileHandler
-import os
+from typing import Optional
 
-def setup_logger(name: str = "dev-toolkit-83", log_file: str = "app.log") -> logging.Logger:
-    """Configures a rotating file logger for autoclicker operations."""
-    logger = logging.getLogger(name)
-    logger.setLevel(logging.INFO)
+def setup_logger(name: str, level: int = logging.INFO) -> logging.Logger:
+    """
+    Configures and returns a logger instance for dev-toolkit-83.
 
-    # Prevent duplicate handlers if setup is called multiple times
-    if logger.hasHandlers():
-        return logger
+    Args:
+        name: Name of the logger.
+        level: Logging severity level.
 
-    # Formatter for clear log entries
-    formatter = logging.Formatter(
-        '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    Returns:
+        A configured logging.Logger object.
+    """
+    logger: logging.Logger = logging.getLogger(name)
+    logger.setLevel(level)
+
+    formatter: logging.Formatter = logging.Formatter(
+        "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
     )
 
-    # Setup rotating file handler: max 5MB, keep 3 backup files
-    file_handler = RotatingFileHandler(
-        log_file, 
-        maxBytes=5*1024*1024, 
-        backupCount=3
-    )
-    file_handler.setFormatter(formatter)
+    handler: logging.StreamHandler = logging.StreamHandler()
+    handler.setFormatter(formatter)
 
-    # Setup console handler for real-time visibility
-    console_handler = logging.StreamHandler()
-    console_handler.setFormatter(formatter)
-
-    logger.addHandler(file_handler)
-    logger.addHandler(console_handler)
+    if not logger.handlers:
+        logger.addHandler(handler)
 
     return logger
 
-# Initialize default instance
-logger = setup_logger()
+def log_action(logger: logging.Logger, message: str, level: str = "info") -> None:
+    """
+    Dispatches a formatted log message based on severity level.
+
+    Args:
+        logger: Logger instance to use.
+        message: Content to log.
+        level: Severity level string.
+    """
+    levels = {
+        "info": logger.info,
+        "warning": logger.warning,
+        "error": logger.error
+    }
+    log_func = levels.get(level.lower(), logger.info)
+    log_func(message)
