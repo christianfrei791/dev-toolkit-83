@@ -1,31 +1,43 @@
-import time
-import pyautogui
-from typing import Tuple, Optional
+import random
+from typing import Tuple, List, Optional
+
 
 class ClickProcessor:
-    """Handles automated clicking logic for dev-toolkit-83."""
+    """Helper utilities for processing autoclicker timing and event intervals."""
 
-    def __init__(self, interval: float = 0.1) -> None:
-        """Initialize processor with specified click interval."""
-        self.interval: float = interval
+    @staticmethod
+    def calculate_interval(cps: float) -> float:
+        """Calculate base delay interval in seconds from clicks per second (CPS)."""
+        if cps <= 0:
+            raise ValueError("CPS must be greater than zero.")
+        return 1.0 / cps
 
-    def perform_click(self, coordinates: Tuple[int, int]) -> bool:
-        """Executes a mouse click at target coordinates."""
+    @staticmethod
+    def apply_jitter(base_interval: float, jitter_percentage: float = 0.1) -> float:
+        """Apply a randomized variance (jitter) to humanize click intervals."""
+        if jitter_percentage < 0:
+            return base_interval
+        variation = base_interval * jitter_percentage
+        jittered = base_interval + random.uniform(-variation, variation)
+        return max(0.001, jittered)
+
+    @staticmethod
+    def parse_coordinate_string(coord_str: str) -> Optional[Tuple[int, int]]:
+        """Parse 'X,Y' string into integer tuple coordinates."""
         try:
-            x, y = coordinates
-            pyautogui.click(x=x, y=y)
-            time.sleep(self.interval)
-            return True
-        except Exception:
-            return False
+            parts = coord_str.strip().split(',')
+            if len(parts) != 2:
+                return None
+            return int(parts[0].strip()), int(parts[1].strip())
+        except ValueError:
+            return None
 
-    def run_sequence(self, points: list[Tuple[int, int]], repeats: int = 1) -> None:
-        """Iterates through a list of points multiple times."""
-        for _ in range(repeats):
-            for point in points:
-                if not self.perform_click(point):
-                    break
-
-    def get_status(self) -> str:
-        """Returns current operational state of processor."""
-        return f"Active with interval: {self.interval}s"
+    @staticmethod
+    def batch_generate_delays(count: int, base_cps: float, humanize: bool = True) -> List[float]:
+        """Generate a series of delays for a sequence of clicks."""
+        base = ClickProcessor.calculate_interval(base_cps)
+        delays = []
+        for _ in range(count):
+            delay = ClickProcessor.apply_jitter(base) if humanize else base
+            delays.append(round(delay, 4))
+        return delays
