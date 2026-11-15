@@ -1,36 +1,24 @@
-import json
-import os
-from typing import Dict, Any
+import time
+import functools
+import logging
 
-DEFAULT_CONFIG = {
-    "interval": 0.1,
-    "button": "left",
-    "repeat": True,
-    "hotkey": "f6"
-}
+logger = logging.getLogger(__name__)
 
-def load_configuration(filepath: str = "config.json") -> Dict[str, Any]:
-    """
-    Loads configuration from JSON file or returns defaults if missing.
-    """
-    if not os.path.exists(filepath):
-        save_configuration(filepath, DEFAULT_CONFIG)
-        return DEFAULT_CONFIG
-
-    try:
-        with open(filepath, "r") as file:
-            config = json.load(file)
-            # Ensure defaults for missing keys
-            return {**DEFAULT_CONFIG, **config}
-    except (json.JSONDecodeError, IOError):
-        return DEFAULT_CONFIG
-
-def save_configuration(filepath: str, config: Dict[str, Any]) -> None:
-    """
-    Persists the current configuration dictionary to disk.
-    """
-    try:
-        with open(filepath, "w") as file:
-            json.dump(config, file, indent=4)
-    except IOError as e:
-        print(f"Failed to save configuration: {e}")
+def with_retry(max_attempts=3, delay=2, exceptions=(ConnectionError, TimeoutError)):
+    """Decorator for retrying network operations on specific exceptions."""
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            attempts = 0
+            while attempts < max_attempts:
+                try:
+                    return func(*args, **kwargs)
+                except exceptions as e:
+                    attempts += 1
+                    if attempts >= max_attempts:
+                        logger.error(f"Final attempt failed for {func.__name__}: {e}")
+                        raise
+                    logger.warning(f"Retry {attempts}/{max_attempts} for {func.__name__} due to {e}")
+                    time.sleep(delay)
+        return wrapper
+    return decorator
