@@ -1,43 +1,30 @@
+import time
 import random
-from typing import Tuple, List, Optional
+import pyautogui
 
+def execute_click(x: int, y: int, interval: float = 0.0) -> None:
+    """Performs a mouse click at specified screen coordinates."""
+    pyautogui.click(x=x, y=y)
+    if interval > 0:
+        time.sleep(interval)
 
-class ClickProcessor:
-    """Helper utilities for processing autoclicker timing and event intervals."""
+def perform_jitter_click(x: int, y: int, radius: int = 5) -> None:
+    """Performs a click with slight spatial randomization."""
+    target_x = x + random.randint(-radius, radius)
+    target_y = y + random.randint(-radius, radius)
+    pyautogui.click(x=target_x, y=target_y)
 
-    @staticmethod
-    def calculate_interval(cps: float) -> float:
-        """Calculate base delay interval in seconds from clicks per second (CPS)."""
-        if cps <= 0:
-            raise ValueError("CPS must be greater than zero.")
-        return 1.0 / cps
+def wait_random(min_s: float, max_s: float) -> None:
+    """Pauses execution for a random duration to mimic human behavior."""
+    delay = random.uniform(min_s, max_s)
+    time.sleep(delay)
 
-    @staticmethod
-    def apply_jitter(base_interval: float, jitter_percentage: float = 0.1) -> float:
-        """Apply a randomized variance (jitter) to humanize click intervals."""
-        if jitter_percentage < 0:
-            return base_interval
-        variation = base_interval * jitter_percentage
-        jittered = base_interval + random.uniform(-variation, variation)
-        return max(0.001, jittered)
+def get_screen_center() -> tuple:
+    """Calculates the center of the primary display."""
+    width, height = pyautogui.size()
+    return (width // 2, height // 2)
 
-    @staticmethod
-    def parse_coordinate_string(coord_str: str) -> Optional[Tuple[int, int]]:
-        """Parse 'X,Y' string into integer tuple coordinates."""
-        try:
-            parts = coord_str.strip().split(',')
-            if len(parts) != 2:
-                return None
-            return int(parts[0].strip()), int(parts[1].strip())
-        except ValueError:
-            return None
-
-    @staticmethod
-    def batch_generate_delays(count: int, base_cps: float, humanize: bool = True) -> List[float]:
-        """Generate a series of delays for a sequence of clicks."""
-        base = ClickProcessor.calculate_interval(base_cps)
-        delays = []
-        for _ in range(count):
-            delay = ClickProcessor.apply_jitter(base) if humanize else base
-            delays.append(round(delay, 4))
-        return delays
+def drag_and_drop(start: tuple, end: tuple, duration: float = 0.5) -> None:
+    """Simulates a drag movement between two points."""
+    pyautogui.moveTo(start[0], start[1])
+    pyautogui.dragTo(end[0], end[1], duration=duration, button='left')
