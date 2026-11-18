@@ -1,29 +1,37 @@
-def validate_click_settings(interval, duration):
-    """
-    Validates user input for autoclicker configuration.
-    Ensures timing values are positive and reasonable.
-    """
-    try:
-        f_interval = float(interval)
-        f_duration = float(duration)
+import time
+import functools
+import logging
 
-        if f_interval < 0.01:
-            raise ValueError("Interval must be at least 0.01 seconds.")
-        if f_duration < 0:
-            raise ValueError("Duration cannot be negative.")
+logger = logging.getLogger(__name__)
 
-        return True, (f_interval, f_duration)
-    except (ValueError, TypeError):
-        return False, None
+def with_retry(max_attempts=3, delay=2, exceptions=(ConnectionError, TimeoutError)):
+    """Decorator to implement exponential backoff retry logic."""
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            attempts = 0
+            current_delay = delay
+            
+            while attempts < max_attempts:
+                try:
+                    return func(*args, **kwargs)
+                except exceptions as e:
+                    attempts += 1
+                    if attempts >= max_attempts:
+                        logger.error(f"Final attempt failed for {func.__name__}: {e}")
+                        raise
+                    
+                    logger.warning(f"Attempt {attempts} failed, retrying in {current_delay}s...")
+                    time.sleep(current_delay)
+                    current_delay *= 2
+            
+        return wrapper
+    return decorator
 
-def validate_coordinates(x, y):
-    """
-    Ensures screen coordinates are non-negative integers.
-    """
-    try:
-        ix, iy = int(x), int(y)
-        if ix < 0 or iy < 0:
-            return False, None
-        return True, (ix, iy)
-    except (ValueError, TypeError):
-        return False, None
+@with_retry(max_attempts=3)
+def validate_connection(target_url):
+    """Example network operation requiring retry logic."""
+    # Simulation of network call
+    if not target_url:
+        raise ConnectionError("Invalid target URL")
+    return True
