@@ -2,33 +2,32 @@ import logging
 from logging.handlers import RotatingFileHandler
 import os
 
-def setup_logger(name: str, log_file: str = 'dev-toolkit-83.log') -> logging.Logger:
+def setup_logger(name='dev-toolkit-83', log_file='autoclicker.log', level=logging.INFO):
     """
-    Configures a rotating file logger for autoclicker runtime tracking.
-    Max log size set to 1MB with 3 backup files.
+    Configures a rotating file logger for the application.
+    Limits file size to 1MB and keeps 3 backups.
     """
     logger = logging.getLogger(name)
-    logger.setLevel(logging.INFO)
+    logger.setLevel(level)
 
-    # Prevent duplicate handlers if re-initialized
+    # Prevent duplicate handlers if setup is called multiple times
     if not logger.handlers:
         formatter = logging.Formatter(
             '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
         )
 
-        # Rotation setup: 1MB per file, keep 3 old logs
-        file_handler = RotatingFileHandler(
+        # Rotation setup: max 1MB per file, max 3 backups
+        handler = RotatingFileHandler(
             log_file, 
             maxBytes=1*1024*1024, 
             backupCount=3
         )
-        file_handler.setFormatter(formatter)
+        handler.setFormatter(formatter)
+        logger.addHandler(handler)
 
-        # Console output for real-time visibility
+        # Add console output for development visibility
         console_handler = logging.StreamHandler()
         console_handler.setFormatter(formatter)
-
-        logger.addHandler(file_handler)
         logger.addHandler(console_handler)
 
     return logger
