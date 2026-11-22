@@ -1,52 +1,39 @@
 # dev-toolkit-83
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-
-`dev-toolkit-83` is a lightweight, high-precision Python autoclicker designed for automated GUI testing, workflow simulation, and repetitive cursor tasks. Built with multi-threading support, it delivers customizable click intervals and global hotkey controls without causing desktop input lag.
+`dev-toolkit-83` is a high-performance, asynchronous autoclicker built with Python to automate repetitive mouse tasks with precision. Designed for efficiency, it offers low-latency execution and customizable trigger patterns for various desktop environments.
 
 ## Features
 
-* **Precision Timing Engine:** Configurable sub-millisecond delay options for high-frequency or exact-interval click loops.
-* **Global Hotkey Listeners:** Toggle execution or instantly abort scripts system-wide using custom key combinations (`F8` by default).
-* **Multi-Target Sequencing:** Define and cycle through specific screen coordinates across multiple display setups.
-* **Randomized Human Micro-Delays:** Optional Gaussian jitter distribution to simulate natural human clicking behavior during automated test suites.
+*   **Jitter-Click Emulation:** Supports randomized intervals between clicks to mimic human behavior and evade basic anti-cheat heuristics.
+*   **Dynamic Hotkey Control:** Bind custom keyboard triggers to start or stop the click loop without interrupting your workflow.
+*   **Asynchronous Engine:** Utilizes the `pynput` library for non-blocking execution, ensuring system stability while the background process runs.
+*   **Coordinate Locking:** Optional feature to lock clicks to a specific (X, Y) pixel location or follow the current cursor position.
 
 ## Installation
 
-Ensure you have Python 3.8+ installed, then clone the repository and install dependencies:
+Ensure you have Python 3.8+ installed. Clone the repository and install the required dependencies:
 
 ```bash
 git clone https://github.com/Developer/dev-toolkit-83.git
 cd dev-toolkit-83
-pip install pynput pyautogui
-pip install -e .
+pip install -r requirements.txt
 ```
 
-## Quick Start
+## Usage
 
-Run `dev-toolkit-83` directly from your terminal or import it as a module in your Python scripts.
-
-### Command Line Interface
+To launch the autoclicker with default settings, run the primary module from your terminal:
 
 ```bash
-python -m dev_toolkit_83 --interval 0.05 --button left --hotkey f8
+python main.py --interval 0.1 --button left
 ```
 
-### Python API Example
+### Basic Example
+Once the script is running, press your assigned trigger key (default: `F6`) to toggle the clicking action. You can modify the click frequency in `config.json` to adjust the delay (in seconds) between each registered press.
 
-```python
-from dev_toolkit_83 import AutoClicker, MouseButton
-
-# Initialize clicker with a 50ms interval on the left mouse button
-clicker = AutoClicker(interval=0.05, button=MouseButton.LEFT)
-
-# Bind toggle switch to F8 key
-clicker.bind_hotkey("f8")
-
-# Start listening for inputs in a non-blocking thread
-clicker.listen()
-```
+*Note: Please ensure you have the necessary accessibility permissions enabled for your terminal or IDE to allow simulated mouse input.*
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
+
+Distributed under the MIT License. See `LICENSE` for more information.
