@@ -1,28 +1,30 @@
-import json
-import os
-from typing import Dict, Any
+import time
+import pyautogui
+import random
 
-def load_click_profile(filepath: str) -> Dict[str, Any]:
-    """Loads autoclicker configuration from JSON file."""
-    if not os.path.exists(filepath):
-        return {"interval": 0.1, "button": "left", "repeats": 1}
-    
-    with open(filepath, 'r') as f:
-        try:
-            return json.load(f)
-        except json.JSONDecodeError:
-            return {}
+def safe_click(x, y, delay_range=(0.1, 0.5)):
+    """Performs a click at coordinates with randomized delay."""
+    time.sleep(random.uniform(*delay_range))
+    pyautogui.click(x, y)
 
-def save_click_profile(filepath: str, data: Dict[str, Any]) -> bool:
-    """Persists autoclicker settings to JSON storage."""
-    try:
-        with open(filepath, 'w') as f:
-            json.dump(data, f, indent=4)
-        return True
-    except (IOError, TypeError):
-        return False
+def smart_drag(start_pos, end_pos, duration=0.5):
+    """Drags mouse between points with linear easing."""
+    pyautogui.moveTo(*start_pos)
+    pyautogui.dragTo(*end_pos, duration=duration, button='left')
 
-def validate_profile(data: Dict[str, Any]) -> bool:
-    """Ensures configuration keys meet functional requirements."""
-    required_keys = {"interval", "button", "repeats"}
-    return all(key in data for key in required_keys) and isinstance(data["interval"], (int, float))
+def get_screen_center():
+    """Calculates the center of the primary display."""
+    width, height = pyautogui.size()
+    return width // 2, height // 2
+
+def confirm_coords(x, y):
+    """Validates that coordinates are within screen bounds."""
+    width, height = pyautogui.size()
+    return 0 <= x <= width and 0 <= y <= height
+
+def perform_sequence(actions):
+    """Executes a list of actions with configurable timing."""
+    for action in actions:
+        func, args = action
+        func(*args)
+        time.sleep(0.1)
