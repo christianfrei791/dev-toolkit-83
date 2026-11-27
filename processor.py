@@ -1,30 +1,46 @@
 import time
-import random
-import pyautogui
+import logging
+from typing import Callable, Any, Optional
 
-def execute_click(x: int, y: int, interval: float = 0.0) -> None:
-    """Performs a mouse click at specified screen coordinates."""
-    pyautogui.click(x=x, y=y)
-    if interval > 0:
-        time.sleep(interval)
+logger = logging.getLogger(__name__)
 
-def perform_jitter_click(x: int, y: int, radius: int = 5) -> None:
-    """Performs a click with slight spatial randomization."""
-    target_x = x + random.randint(-radius, radius)
-    target_y = y + random.randint(-radius, radius)
-    pyautogui.click(x=target_x, y=target_y)
+def with_retry(func: Callable, retries: int = 3, delay: float = 1.0) -> Optional[Any]:
+    """
+    Executes a network-dependent function with exponential backoff.
+    Returns the result on success or None after exhausted attempts.
+    """
+    attempt = 0
+    current_delay = delay
+    
+    while attempt < retries:
+        try:
+            return func()
+        except (ConnectionError, TimeoutError) as e:
+            attempt += 1
+            logger.warning(f"Attempt {attempt} failed: {e}. Retrying in {current_delay}s...")
+            
+            if attempt == retries:
+                logger.error("Max retries reached. Network operation aborted.")
+                break
+                
+            time.sleep(current_delay)
+            current_delay *= 2
+            
+    return None
 
-def wait_random(min_s: float, max_s: float) -> None:
-    """Pauses execution for a random duration to mimic human behavior."""
-    delay = random.uniform(min_s, max_s)
-    time.sleep(delay)
+class NetworkProcessor:
+    """
+    Handles automated click coordination with network safety.
+    """
+    def __init__(self, target_url: str):
+        self.target_url = target_url
 
-def get_screen_center() -> tuple:
-    """Calculates the center of the primary display."""
-    width, height = pyautogui.size()
-    return (width // 2, height // 2)
-
-def drag_and_drop(start: tuple, end: tuple, duration: float = 0.5) -> None:
-    """Simulates a drag movement between two points."""
-    pyautogui.moveTo(start[0], start[1])
-    pyautogui.dragTo(end[0], end[1], duration=duration, button='left')
+    def send_click_event(self, payload: dict) -> bool:
+        # Simulated network operation
+        def task():
+            # Placeholder for actual requests.post logic
+            print(f"Syncing payload to {self.target_url}")
+            return True
+            
+        result = with_retry(task)
+        return result is not None
